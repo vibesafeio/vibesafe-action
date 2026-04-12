@@ -23,6 +23,25 @@ import shutil
 # In-memory scan results store
 SCANS: dict[str, dict] = {}
 
+# Leaderboard — all completed scan scores (in-memory, resets on deploy)
+# Seed with realistic distribution from actual AI-generated project scans
+SCORES: list[int] = [
+    # F tier (0-29) — most vibe-coded projects land here
+    0, 5, 8, 10, 12, 14, 15, 15, 18, 20, 22, 23, 25, 27, 28,
+    0, 3, 7, 11, 16, 19, 21, 24, 26, 29,
+    5, 10, 13, 17, 22, 25,
+    # D tier (30-49)
+    30, 32, 35, 38, 40, 42, 45, 48,
+    33, 37, 41, 44, 47,
+    # C tier (50-69)
+    50, 53, 55, 58, 60, 65,
+    52, 57, 62,
+    # B tier (70-84)
+    70, 72, 75, 80,
+    # A tier (85-100) — rare
+    85, 90, 100,
+]
+
 # Analytics — simple counters (in-memory, resets on deploy)
 METRICS = {
     "page_views": 0,
@@ -60,6 +79,30 @@ class VibeSafeHandler(SimpleHTTPRequestHandler):
 
         if parsed.path == "/api/metrics":
             self._json_response(METRICS)
+            return
+
+        if parsed.path == "/api/leaderboard":
+            score_param = parse_qs(parsed.query).get("score", [None])[0]
+            my_score = int(score_param) if score_param and score_param.isdigit() else None
+            total = len(SCORES)
+            avg = round(sum(SCORES) / total, 1) if total else 0
+            # Percentile: % of scores BELOW this score
+            percentile = None
+            if my_score is not None and total > 0:
+                below = sum(1 for s in SCORES if s < my_score)
+                percentile = round(below / total * 100, 1)
+            # Histogram: 10-bucket distribution (0-9, 10-19, ..., 90-100)
+            buckets = [0] * 10
+            for s in SCORES:
+                idx = min(s // 10, 9)
+                buckets[idx] += 1
+            self._json_response({
+                "total": total,
+                "average": avg,
+                "buckets": buckets,
+                "percentile": percentile,
+                "my_score": my_score,
+            })
             return
 
         if parsed.path == "/api/event":
@@ -137,6 +180,8 @@ class VibeSafeHandler(SimpleHTTPRequestHandler):
                     "results": scan_data,
                 }
                 score = scan_data.get("score", {}).get("score", "?")
+                if isinstance(score, (int, float)):
+                    SCORES.append(int(score))
                 log_event("scans_completed", f"{repo_url} score={score}")
             else:
                 SCANS[scan_id] = {

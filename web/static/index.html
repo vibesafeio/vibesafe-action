@@ -160,6 +160,32 @@
             font-size: 0.8rem;
             text-align: center;
         }
+
+        /* Wombat Burrow Leaderboard */
+        .burrow-section {
+            margin-top: 24px;
+            padding: 20px;
+            background: #111;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .burrow-section h3 {
+            font-size: 1rem;
+            color: #aaa;
+            margin-bottom: 12px;
+        }
+        .burrow-canvas-wrap {
+            position: relative;
+            display: inline-block;
+        }
+        .burrow-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: #888;
+        }
+        .burrow-stats strong { color: #fff; }
     </style>
 </head>
 <body>
@@ -371,6 +397,18 @@
                 });
             }
 
+            // Wombat Burrow leaderboard section (hidden until data loads)
+            html += `
+                <div id="burrowSection" class="burrow-section" style="display:none">
+                    <h3>Where do you stand?</h3>
+                    <p id="burrowTop" style="color:#aaa; margin-bottom:12px; font-size:0.95rem;"></p>
+                    <div class="burrow-canvas-wrap">
+                        <canvas id="burrowCanvas" width="360" height="180" style="border-radius:8px;"></canvas>
+                    </div>
+                    <div class="burrow-stats" id="burrowStats"></div>
+                </div>
+            `;
+
             // Trust section
             html += `
                 <div style="margin-top:24px; padding:16px; background:#111; border-radius:8px; font-size:0.85rem; color:#888;">
@@ -392,6 +430,9 @@
 
             document.getElementById('results').innerHTML = html;
             document.getElementById('results').style.display = 'block';
+
+            // Load burrow distribution (only for numeric scores)
+            if (typeof points === 'number') loadBurrow(points);
         }
 
         function showError(msg) {
@@ -476,6 +517,193 @@ jobs:
       - uses: actions/checkout@v4
       - uses: vibesafeio/vibesafe-action@v0`;
             return `https://github.com/${match[1]}/new/main?filename=.github/workflows/vibesafe.yml&value=${encodeURIComponent(yaml)}`;
+        }
+
+        // Wombat Burrow Distribution
+        async function loadBurrow(myScore) {
+            try {
+                const res = await fetch(`/api/leaderboard?score=${myScore}`);
+                const data = await res.json();
+                if (data.total < 2) return; // need at least 2 scans
+                const el = document.getElementById('burrowSection');
+                if (!el) return;
+                el.style.display = 'block';
+
+                const pct = data.percentile;
+                const topPct = Math.max(0, Math.round(100 - pct));
+
+                // Update text
+                document.getElementById('burrowTop').innerHTML =
+                    `Your score is higher than <strong style="color:#4ade80">${Math.round(pct)}%</strong> of scanned projects`;
+                document.getElementById('burrowStats').innerHTML =
+                    `<span><strong>${data.total}</strong> projects scanned</span>` +
+                    `<span>avg score: <strong>${data.average}</strong></span>` +
+                    `<span>top <strong>${topPct}%</strong></span>`;
+
+                drawBurrow(document.getElementById('burrowCanvas'), data.buckets, myScore);
+            } catch(e) { /* silent */ }
+        }
+
+        function drawBurrow(canvas, buckets, myScore) {
+            const W = 360, H = 180;
+            canvas.width = W; canvas.height = H;
+            const ctx = canvas.getContext('2d');
+
+            const maxB = Math.max(...buckets, 1);
+            // Normalize bucket heights (0-1)
+            const norm = buckets.map(b => b / maxB);
+
+            // Colors
+            const DIRT = '#3D3225';
+            const DIRT_LIGHT = '#5C4A36';
+            const TUNNEL = '#1a1200';
+            const GRASS_1 = '#5D8035';
+            const GRASS_2 = '#4A6B2A';
+            const LINE_COL = '#4ade80';
+
+            // Layout
+            const grassY = 25;
+            const tunnelTop = 40;
+            const tunnelMaxH = 100;
+            const bucketW = W / 10;
+
+            // Background: dark earth
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, W, H);
+
+            // Draw dirt fill
+            ctx.fillStyle = DIRT;
+            ctx.fillRect(0, grassY + 4, W, H - grassY);
+
+            // Draw tunnel (carved out of dirt)
+            // Smooth the curve with interpolation
+            const pts = [];
+            for (let i = 0; i < 10; i++) {
+                const cx = bucketW * i + bucketW / 2;
+                const h = norm[i] * tunnelMaxH;
+                pts.push({ x: cx, y: tunnelTop, h: h });
+            }
+
+            // Draw tunnel shape
+            ctx.beginPath();
+            ctx.moveTo(0, tunnelTop);
+            for (let i = 0; i < pts.length; i++) {
+                const p = pts[i];
+                const bottom = tunnelTop + p.h;
+                if (i === 0) {
+                    ctx.lineTo(p.x - bucketW/2, tunnelTop);
+                }
+                // Smooth curve to bottom
+                const prevX = i > 0 ? pts[i-1].x : p.x - bucketW;
+                const prevH = i > 0 ? pts[i-1].h : 0;
+                const prevBottom = tunnelTop + prevH;
+                ctx.bezierCurveTo(
+                    prevX + bucketW * 0.7, prevBottom,
+                    p.x - bucketW * 0.3, bottom,
+                    p.x, bottom
+                );
+            }
+            // Close right side
+            const lastP = pts[pts.length - 1];
+            ctx.bezierCurveTo(
+                lastP.x + bucketW * 0.3, tunnelTop + lastP.h,
+                W, tunnelTop,
+                W, tunnelTop
+            );
+            ctx.lineTo(W, tunnelTop);
+            ctx.closePath();
+
+            // Fill tunnel with dark color
+            ctx.fillStyle = TUNNEL;
+            ctx.fill();
+
+            // Add some texture dots in tunnel
+            for (let i = 0; i < 40; i++) {
+                const x = Math.random() * W;
+                const bIdx = Math.min(Math.floor(x / bucketW), 9);
+                const maxH = norm[bIdx] * tunnelMaxH;
+                if (maxH < 5) continue;
+                const y = tunnelTop + Math.random() * maxH;
+                ctx.fillStyle = `rgba(61, 50, 37, ${Math.random() * 0.3})`;
+                ctx.fillRect(x, y, 2, 2);
+            }
+
+            // Draw grass on top
+            for (let x = 0; x < W; x += 4) {
+                ctx.fillStyle = x % 8 === 0 ? GRASS_1 : GRASS_2;
+                ctx.fillRect(x, grassY, 4, 5);
+                // Grass blades
+                if (Math.random() > 0.6) {
+                    ctx.fillStyle = GRASS_1;
+                    ctx.fillRect(x + 1, grassY - 3 - Math.random() * 4, 2, 5);
+                }
+            }
+
+            // Dirt texture on top
+            for (let i = 0; i < 30; i++) {
+                const x = Math.random() * W;
+                const y = grassY + 5 + Math.random() * 10;
+                ctx.fillStyle = Math.random() > 0.5 ? DIRT_LIGHT : DIRT;
+                ctx.fillRect(x, y, 3, 2);
+            }
+
+            // Score labels at bottom
+            ctx.fillStyle = '#555';
+            ctx.font = '10px monospace';
+            ctx.textAlign = 'center';
+            for (let i = 0; i <= 10; i++) {
+                ctx.fillText(i * 10, i * bucketW, H - 3);
+            }
+
+            // Vertical line at user's score
+            const scoreX = (myScore / 100) * W;
+            ctx.strokeStyle = LINE_COL;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 3]);
+            ctx.beginPath();
+            ctx.moveTo(scoreX, grassY - 5);
+            ctx.lineTo(scoreX, H - 12);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // "You" label
+            ctx.fillStyle = LINE_COL;
+            ctx.font = 'bold 11px -apple-system, sans-serif';
+            ctx.textAlign = scoreX > W * 0.8 ? 'right' : scoreX < W * 0.2 ? 'left' : 'center';
+            ctx.fillText('▼ You', scoreX, grassY - 8);
+
+            // Draw tiny wombat at score position in tunnel
+            const bIdx = Math.min(Math.floor(myScore / 10), 9);
+            const tunnelH = norm[bIdx] * tunnelMaxH;
+            if (tunnelH > 15) {
+                const wx = scoreX - 8;
+                const wy = tunnelTop + tunnelH * 0.5 - 5;
+                // Mini wombat (simplified)
+                ctx.fillStyle = '#9B7B5E';
+                ctx.fillRect(wx, wy, 4, 3);      // body
+                ctx.fillRect(wx+4, wy-1, 3, 4);   // body
+                ctx.fillRect(wx+7, wy, 3, 3);     // body
+                ctx.fillRect(wx+10, wy+1, 2, 2);  // tail
+                ctx.fillStyle = '#B8967A';
+                ctx.fillRect(wx+1, wy+1, 2, 1);   // belly
+                ctx.fillRect(wx+5, wy, 2, 2);
+                ctx.fillStyle = '#2C2216';
+                ctx.fillRect(wx+2, wy, 1, 1);     // eye
+            }
+
+            // Bucket count labels inside tunnel
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.font = '9px monospace';
+            ctx.textAlign = 'center';
+            for (let i = 0; i < 10; i++) {
+                if (buckets[i] > 0) {
+                    const cx = bucketW * i + bucketW / 2;
+                    const h = norm[i] * tunnelMaxH;
+                    if (h > 15) {
+                        ctx.fillText(buckets[i], cx, tunnelTop + h * 0.7);
+                    }
+                }
+            }
         }
 
         // Enter key support
