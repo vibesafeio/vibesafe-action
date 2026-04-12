@@ -1,11 +1,10 @@
-from __future__ import annotations
 #!/usr/bin/env python3
+from __future__ import annotations
 """
 tools/report/score_calculator.py
 SAST, SCA, 시크릿 스캔 결과를 종합하여 보안 점수(0-100)를 산출한다.
 도메인 가중치를 적용하여 규제 위험도를 반영한다.
 """
-from __future__ import annotations
 
 import argparse
 import json
@@ -40,7 +39,7 @@ DOMAIN_WEIGHTS = {
 }
 
 try:
-    from tools.shared import FRAMEWORK_CONFLICTS
+    from tools.shared import FRAMEWORK_CONFLICTS, NOISY_RULES
 except ImportError:
     FRAMEWORK_CONFLICTS: dict[str, list[str]] = {
         "flask": ["python.django."], "django": ["python.flask."],
@@ -51,6 +50,7 @@ except ImportError:
         "vue": ["python.django.", "python.flask."],
         "spring": ["python.flask.", "python.django."],
     }
+    NOISY_RULES: list[str] = ["password-comparison-timing"]
 
 # 기본 CVSS 점수 (심각도 → 점수)
 BASE_CVSS = {"critical": 9.5, "high": 7.5, "medium": 5.0, "low": 2.0, "info": 0.0}
@@ -92,6 +92,10 @@ def parse_sarif_vulnerabilities(sarif_file: Path, detected_stack: list[str] | No
 
             # 프레임워크 충돌 오탐 필터링
             if any(rule_id.startswith(prefix) for prefix in exclude_prefixes):
+                continue
+
+            # Noisy rule 필터링 (고 오탐률 규칙 제거)
+            if any(pattern in rule_id.lower() for pattern in NOISY_RULES):
                 continue
 
             # result.level이 없으면 rule의 defaultConfiguration.level로 fallback

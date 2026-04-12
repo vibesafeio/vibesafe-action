@@ -84,7 +84,7 @@ def get_fix_suggestion(rule_id: str) -> str | None:
 
 # Import shared constants (DRY — single source of truth)
 try:
-    from tools.shared import FRAMEWORK_CONFLICTS
+    from tools.shared import FRAMEWORK_CONFLICTS, NOISY_RULES
 except ImportError:
     # Fallback for Docker where import path differs
     FRAMEWORK_CONFLICTS: dict[str, list[str]] = {
@@ -96,6 +96,7 @@ except ImportError:
         "vue": ["python.django.", "python.flask."],
         "spring": ["python.flask.", "python.django."],
     }
+    NOISY_RULES: list[str] = ["password-comparison-timing"]
 
 
 def load_sarif_findings(sarif_path: str, detected_stack: list[str] | None = None) -> list[dict]:
@@ -129,6 +130,10 @@ def load_sarif_findings(sarif_path: str, detected_stack: list[str] | None = None
 
             # 프레임워크 충돌 오탐 필터링
             if any(rule_id.startswith(prefix) for prefix in exclude_prefixes):
+                continue
+
+            # Noisy rule 필터링 (고 오탐률 규칙 제거)
+            if any(pattern in rule_id.lower() for pattern in NOISY_RULES):
                 continue
 
             meta = rule_meta.get(rule_id, {})
