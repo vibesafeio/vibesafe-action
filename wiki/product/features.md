@@ -26,7 +26,10 @@ Pre-commit hook, MCP 서버, SCA, Config Scanner 구현 완료.
 | 머지 차단 | fail-on: critical/high/medium. exit 1 → red X | ✅ |
 | 점수 (0-100) | SARIF + secrets + 도메인 가중치 → 등급 A-F. `--verbose`로 per-item 차감 breakdown. high≥1이면 A 등급 차단 (B 캡). | ✅ |
 | 웹 스캐너 | URL 입력 → 30초 스캔 → 결과 + AI 프롬프트 | ✅ |
-| 리더보드 | 웜뱃 땅굴 정규분포 + 백분위 | ✅ |
+| **Per-repo SEO 랜딩** | `/report/<owner>/<repo>` 영구 URL. 캐시 miss 시 auto-scan. robots.txt + sitemap.xml 크롤링 대상. dynamic meta (title/description/OG) | ✅ |
+| **GitHub Marketplace 등재** | `github.com/marketplace/actions/vibesafe-security-scan` (v0.1.1 Latest) | ✅ |
+| UTM attribution | 외부 링크 전수 태깅 + server-side capture (Render 로그 `utm=...`) | ✅ |
+| 리더보드 | 픽셀아트 업라이트 바 차트 (바 위에 웜벳 마커). 홈 preview + 결과 burrow 통합. | ✅ |
 | Pre-commit hook | 커밋 전 secret 탐지 | ✅ |
 | MCP 서버 | Claude Code/Cursor 연동 (check_secret) | ✅ |
 | 접근성 | img alt, label, lang 등 | ✅ (light) |
@@ -40,6 +43,7 @@ Pre-commit hook, MCP 서버, SCA, Config Scanner 구현 완료.
 | Custom Rules | `custom-rules` input으로 사용자 YAML 추가 | ✅ |
 | 뱃지 | shields.io dynamic badge 가이드 | ✅ |
 | Diff-only | 변경된 코드만 스캔 | ❌ (Semgrep Pro 전용) |
+| Certified 뱃지 UI | Share 페이지 + 뱃지 UI | ❌ (TODO) |
 
 ### Fix 제안 패턴 (Phase 1)
 | Semgrep Rule | Fix Type | 변환 |

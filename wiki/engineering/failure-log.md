@@ -13,6 +13,14 @@ sources: [docs/failure-log.md]
 
 ## Content
 
+### 2026-04-17: VibeSafe 자기 자신을 F(32/100)로 채점 — test fixture 시크릿 false positive
+- **원인**: `secret_scanner.scan_directory()`가 `test/fixtures/vuln_python.py`, `test/harness.sh`의 **의도적 가짜 시크릿**(sk-proj-abc123... 형식)을 critical로 보고. placeholder 정규식은 값(value)만 체크하고 경로는 안 봤음.
+- **결과**: SEO 랜딩 전략 배포 직후 VibeSafe 자체 report 페이지가 F로 떴음. 구글 방문자가 "이 도구 자체가 F면 믿을 수 있나" 생각 가능 = **credibility bomb**.
+- **영향 범위**: 모든 사용자 repo. test fixture 있는 프로젝트 점수 왜곡 (1 fixture = -20~-40점, 도메인 가중치에 따라 critical 카운트).
+- **교훈**: secret scanner는 **경로 기반 제외**가 필수. 값-기반 placeholder 체크로는 "현실적인 fake 키"를 못 걸러냄.
+- **방어**: `SKIP_DIRS`에 `test, tests, __tests__, spec, specs, fixture, fixtures, example(s), sample(s), mock(s), __mocks__, demo(s), e2e, cypress, playwright` 추가 (커밋 49e7ae6). 재스캔 결과 32→92 (A). Trade-off: test 코드 내 진짜 시크릿 유출은 놓치지만 프로덕션 코드보다 drastically 낮은 attack surface.
+- **관련**: [[engineering/hard-rules.md]] Rule 7
+
 ### 2026-04-17: Render 웹서비스 OOM (메모리 초과 재시작)
 - **원인**: (1) SCANS dict 무한 증가 — 스캔 결과를 메모리에 계속 쌓고 삭제 안 함. (2) Semgrep 메모리 400MB 설정이 Render free tier 512MB에서 여유 없음. (3) OOM kill 시 /tmp 클론 디렉토리 미정리.
 - **결과**: 웹 스캐너 반복 재시작, 사용자 스캔 중단

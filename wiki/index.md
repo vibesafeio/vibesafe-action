@@ -1,7 +1,7 @@
 ---
 title: VibeSafe Knowledge Index
 type: index
-updated: 2026-04-12
+updated: 2026-04-17
 ---
 
 # VibeSafe Wiki Index
@@ -9,12 +9,19 @@ updated: 2026-04-12
 이 파일을 세션 시작 시 가장 먼저 읽는다.
 질문이 오면 여기서 관련 페이지를 찾고, 해당 페이지만 읽는다.
 
-## Current State (2026-04-12)
-- **Phase:** Post-launch. OKKY 772뷰. 웹 스캐너 운영 중. 리더보드 추가.
-- **Stack:** GitHub Action + Docker + Semgrep + Custom Rules + Web Scanner (Render)
-- **Channels:** OKKY (772뷰, 댓글 3), dev.to (반응 없음), GeekNews (발행), LinkedIn (미시도)
-- **KPI:** Stars ?, Installs ?, OKKY 772뷰
-- **Mascot:** 픽셀 웜벳 (확정. 땅 파는 애니메이션 + 땅굴 리더보드)
+## Current State (2026-04-17)
+- **Phase:** Post-launch, P0 distribution 배포 완료. 일회성 포스트 → 영구 SEO 자산 전환.
+- **Stack:** GitHub Action + Docker + Semgrep + Custom Rules + Web Scanner (Render) + **Per-repo SEO 랜딩 페이지**
+- **Channels:**
+  - OKKY (772뷰, 댓글 4개 — 2026-04-17 "코딩숙" 실제 유저 피드백 확보)
+  - dev.to (반응 없음)
+  - GeekNews (발행)
+  - **GitHub Marketplace (2026-04-17 등재, v0.1.1 Latest)**
+  - **Per-repo SEO (sitemap + robots.txt live, 인덱싱 대기)**
+  - ~~Twitter/LinkedIn~~ (기각: 0-audience에서 follower-based = dead)
+- **KPI (2026-04-17 20:46 KST baseline):** Stars **6**, install_clicks **0**, page_views **3**. Day+3 (2026-04-20) 재측정 예정.
+- **Mascot:** 픽셀 웜벳 (확정). 분포 차트는 **업라이트 바 차트**로 전환 (가시성 우선).
+- **Comms style:** SV (Action + Owner + Deadline + Metric) + Musk 제1원칙 (facts first). CLAUDE.md에 고정.
 
 ## Page Directory
 
@@ -49,7 +56,7 @@ updated: 2026-04-12
 |------|------|------------|
 | [[marketing/channels.md]] | OKKY/dev.to 발행. GeekNews 3/26 대기. Reddit karma 부족 | high |
 | [[marketing/messages.md]] | 두 메시지: "AI 코드가 위험하다"(유입) + "사용자 생기면 네 책임"(전환) | medium |
-| [[marketing/results.md]] | Views 5, Clones 406, Stars 0. 트래픽 문제. | high |
+| [[marketing/results.md]] | 2026-04-17 baseline (Stars 6, page_views 3, install_clicks 0). Day+3 측정 계획. | high |
 
 ### Decisions
 | Page | What | Confidence |
@@ -69,4 +76,6 @@ updated: 2026-04-12
 - market/validation ↔ market/segments: "관심→행동" 문제가 세그먼트 선택에 영향
 - market/pmf-moment ↔ marketing/messages: PMF 순간이 메시지 전략을 결정
 - engineering/failure-log ↔ engineering/hard-rules: 버그가 규칙을 만든다
-- product/positioning ↔ future/accessibility: "Security" → "Safety" 확장
+- product/positioning ↔ future/accessibility: "Security" → "Safety" 확장. 2026-04-17 유저 피드백으로 validation ("a11y > security" in vibe-coded projects).
+- marketing/results ↔ decisions/log: 측정된 KPI가 다음 결정의 input
+- engineering/architecture ↔ marketing/results: SEO 페이지(/report/)가 유입 → install 퍼널의 top

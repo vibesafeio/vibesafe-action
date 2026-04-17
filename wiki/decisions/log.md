@@ -3,7 +3,7 @@ title: Decision Log
 type: decision
 confidence: high
 created: 2026-03-18
-updated: 2026-04-12
+updated: 2026-04-17
 sources: []
 ---
 
@@ -11,6 +11,55 @@ sources: []
 주요 결정 기록. 왜 그렇게 했는지, 대안은 뭐였는지.
 
 ## Content
+
+### 2026-04-17: Per-repo SEO 랜딩 페이지 (`/report/<owner>/<repo>`)
+**결정:** 스캔 결과를 영구 URL로 노출. sitemap.xml + robots.txt + dynamic meta. 완료된 스캔은 REPORTS 캐시에 저장되어 sitemap에 자동 포함.
+**이유:** 일회성 포스트(OKKY/dev.to/GeekNews)는 48시간이면 트래픽 끊김. SEO 페이지는 시간 지날수록 compound. Snyk 전략 (npm 패키지마다 페이지).
+**대안:** Twitter/LinkedIn 포스트 집중 (기각 — follower-based = 0 audience에서 dead), Awesome Lists만 (병행 예정)
+**되돌릴 수 있나:** 예 (server.py 라우트만 제거)
+**관련:** [[engineering/architecture.md]], [[product/positioning.md]]
+
+### 2026-04-17: Install CTA 단일화 — Marketplace 1개만
+**결정:** 결과 페이지 Install CTA 3개 → 1개 (맨 아래 "Install from Marketplace"). 중복 Scan 입력창도 제거.
+**이유:** "Copy YAML & open GitHub" 버튼이 404 유발 (남의 repo에 `/new/main` 연결). 중복 CTA = 첫 방문자 혼란. 맨 아래 한 개는 GitHub 네이티브 install flow 사용 → 유저가 자기 repo 선택 가능.
+**대안:** 3개 유지 (UX 혼란), 직접 YAML 배포 (권한 문제 재발)
+**되돌릴 수 있나:** 예
+**관련:** [[engineering/hard-rules.md]] Rule 8, [[product/features.md]]
+
+### 2026-04-17: 웜벳 분포 차트 업라이트 전환
+**결정:** 기존 "땅굴" 메타포 (grass 위, 구멍이 아래로 카빙) → **업라이트 바 차트** (grass 아래, 바가 위로). 픽셀아트 + 웜벳 마커는 유지.
+**이유:** 첫 방문자가 "이게 막대 그래프구나" 인지하는 데 2-3초 이상 걸림. "깊이 = 카운트"는 반직관 (차트 상식: "키 = 양"). 기능 > 메타포.
+**대안:** 땅굴 유지 (브랜드 우선), 완전 generic bar chart (브랜드 손실)
+**되돌릴 수 있나:** 예 (drawBurrow 복구)
+**관련:** [[product/features.md]]
+
+### 2026-04-17: Secret scanner test/fixture 경로 제외 (Hard Rule 7)
+**결정:** `SKIP_DIRS`에 test/fixture/sample/mock/e2e 등 추가. VibeSafe 자체가 F(32) 사고 원인.
+**이유:** test fixture의 가짜 시크릿이 critical로 카운트되어 모든 사용자 점수 왜곡. SEO 랜딩 페이지 배포 직후 자기 자신 F 표시 = credibility bomb.
+**대안:** 값-기반 placeholder 정교화 (실패함 — "sk-proj-abc123" 같은 현실적 fake 못 거름), downgrade (복잡)
+**되돌릴 수 있나:** 예
+**관련:** [[engineering/failure-log.md]] 2026-04-17, [[engineering/hard-rules.md]] Rule 7
+
+### 2026-04-17: Next.js web/ scaffold 부분 제거 (package.json만)
+**결정:** `web/package.json` + `package-lock.json`만 삭제 → Dependabot 28 vulns 소멸. `src/app/api/`, `prisma/` 설계 코드는 유지 (미래 영속화 마이그레이션 참고자료).
+**이유:** 28 high/medium 알림이 퍼블릭 repo에 떠 있어 credibility 저해. 하지만 src/prisma는 실제 구현체 (WIP) → 전면 삭제는 정보 손실 큼.
+**대안:** A1 전면 삭제 (41 files, 정보 손실), A3 gitignore 숨김 (숨기기는 비추천)
+**되돌릴 수 있나:** 예 (git revert)
+**관련:** [[decisions/rejected.md]] "Next.js 전면 삭제"
+
+### 2026-04-17: GitHub Marketplace 등재
+**결정:** v0.1.1을 Latest로 지정하여 `github.com/marketplace/actions/vibesafe-security-scan` 등재.
+**이유:** 0-audience 상태에서 가장 큰 무료 distribution 채널. GitHub Action 검색 유입.
+**대안:** 등재 안 하고 README만 (수동 설치만 가능 — 전환율 낮음)
+**되돌릴 수 있나:** 예 (Delist action)
+**관련:** [[marketing/results.md]], [[product/features.md]]
+
+### 2026-04-17: UTM 전수 태깅 + server-side capture
+**결정:** 외부 link 전수 UTM (README 배지, 스캐너 CTA, release notes). server.py가 `/` 방문 시 utm_source/medium/campaign을 Render 로그에 기록.
+**이유:** 이전까지 유입 소스 측정 불가 = 맹점. 제1원칙: 측정 없이 최적화 불가.
+**대안:** GA/PostHog 등 analytics SaaS (과함, cost), UTM 생략 (측정 없음)
+**되돌릴 수 있나:** 예
+**관련:** [[marketing/results.md]]
 
 ### 2026-04-12: 웜뱃 땅굴 리더보드 추가
 **결정:** 스캔 결과에 정규분포 시각화 (웜뱃 땅굴 모양) + 백분위 표시
