@@ -23,7 +23,7 @@ URL 입력 → 30초 스캔 → 점수 + 취약점 목록 + AI Fix 프롬프트 
 ### 개발 이력
 - 10차 이터레이션으로 완성 (docs/iteration-log.md 참조)
 - JSON 파싱 오류, /tmp/ 경로 노출, 오탐 등 해결
-- password-comparison-timing-js 규칙 오탐 문제 미해결
+- password-comparison-timing-js 오탐 해결 (커밋 9409553, NOISY_RULES 필터)
 
 ### 퍼널 역할
 ```
@@ -31,7 +31,6 @@ URL 입력 → 30초 스캔 → 점수 + 취약점 목록 + AI Fix 프롬프트 
 ```
 
 ## Open Questions
-- password-comparison-timing-js 오탐 해결?
 - Render free tier sleep 문제 (첫 요청 느림)
 
 ## Related

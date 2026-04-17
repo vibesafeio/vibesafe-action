@@ -3,12 +3,15 @@
 Read this at session start. Do not repeat past mistakes.
 
 ## Architecture & Docs
-- Architecture diagram: @docs/architecture.md
-- Harness self-verification protocol: @docs/harness-protocol.md
-- Failure log: @docs/failure-log.md
-- Competitive analysis: @docs/competitive_analysis.md
-- Auto-fix design: @docs/auto_fix_design.md
-- MCP server design: @docs/mcp_server_design.md
+- **Start here**: @wiki/index.md (project knowledge index)
+- Architecture: @wiki/engineering/architecture.md
+- Failure log: @wiki/engineering/failure-log.md
+- Hard rules: @wiki/engineering/hard-rules.md
+- Competitors: @wiki/market/competitors.md
+- Segments: @wiki/market/segments.md
+- Features: @wiki/product/features.md
+- Roadmap: @wiki/product/roadmap.md
+- Legacy docs (archive): docs/ — wiki가 source of truth
 
 ---
 
@@ -101,8 +104,8 @@ Semgrep uses `git ls-files`. Without safe.directory, exit 128 → 0 files scanne
 ---
 
 ## TODO (post-launch)
-- [ ] `score_calculator.py --verbose`: per-item deduction breakdown
-- [ ] high >= 1 caps grade at B
+- [x] `score_calculator.py --verbose`: per-item deduction breakdown
+- [x] high >= 1 caps grade at B (`grade_capped` 필드로 표시)
 - [ ] Share page + Certified badge UI
 
 ---

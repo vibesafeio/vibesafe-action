@@ -24,7 +24,7 @@ Pre-commit hook, MCP 서버, SCA, Config Scanner 구현 완료.
 | Fix 제안 | 32개 패턴 매핑 (SQL injection → parameterized query 등) | ✅ |
 | PR 코멘트 | 파일:라인 + 심각도 + 수정 방법 | ✅ |
 | 머지 차단 | fail-on: critical/high/medium. exit 1 → red X | ✅ |
-| 점수 (0-100) | SARIF + secrets + 도메인 가중치 → 등급 A-F | ✅ |
+| 점수 (0-100) | SARIF + secrets + 도메인 가중치 → 등급 A-F. `--verbose`로 per-item 차감 breakdown. high≥1이면 A 등급 차단 (B 캡). | ✅ |
 | 웹 스캐너 | URL 입력 → 30초 스캔 → 결과 + AI 프롬프트 | ✅ |
 | 리더보드 | 웜뱃 땅굴 정규분포 + 백분위 | ✅ |
 | Pre-commit hook | 커밋 전 secret 탐지 | ✅ |
@@ -52,7 +52,6 @@ Pre-commit hook, MCP 서버, SCA, Config Scanner 구현 완료.
 | debug-enabled | remove_debug | debug=True → 제거 |
 
 ## Open Questions
-- password-comparison-timing-js 규칙이 모든 === 비교를 잡음 (오탐 과다). 규칙 정제 필요.
 - 접근성 규칙을 full mode에서만 돌릴 것인가, light에서도 유지할 것인가?
 
 ## Related

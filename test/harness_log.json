@@ -230,5 +230,127 @@
     "failures": [
       ""
     ]
+  },
+  {
+    "timestamp": "2026-03-20T13:18:08Z",
+    "commit": "93b2e42",
+    "status": "pass",
+    "failures": [
+      ""
+    ]
+  },
+  {
+    "timestamp": "2026-03-20T13:59:42Z",
+    "commit": "6274a14",
+    "status": "pass",
+    "failures": [
+      ""
+    ]
+  },
+  {
+    "timestamp": "2026-03-20T14:06:26Z",
+    "commit": "7f67efa",
+    "status": "pass",
+    "failures": [
+      ""
+    ]
+  },
+  {
+    "timestamp": "2026-03-20T14:14:41Z",
+    "commit": "f65b054",
+    "status": "pass",
+    "failures": [
+      ""
+    ]
+  },
+  {
+    "timestamp": "2026-03-20T23:08:00Z",
+    "commit": "ea788f2",
+    "status": "pass",
+    "failures": [
+      ""
+    ]
+  },
+  {
+    "timestamp": "2026-03-20T23:24:43Z",
+    "commit": "4e575fc",
+    "status": "pass",
+    "failures": [
+      ""
+    ]
+  },
+  {
+    "timestamp": "2026-03-21T02:31:52Z",
+    "commit": "73cf5a0",
+    "status": "pass",
+    "failures": [
+      ""
+    ]
+  },
+  {
+    "timestamp": "2026-03-21T03:16:02Z",
+    "commit": "528ab69",
+    "status": "pass",
+    "failures": [
+      ""
+    ]
+  },
+  {
+    "timestamp": "2026-03-26T21:29:49Z",
+    "commit": "61acdcc",
+    "status": "fail",
+    "failures": [
+      "language-based ruleset",
+      "ruleset pack validation",
+      "secret detection (OpenAI key)"
+    ]
+  },
+  {
+    "timestamp": "2026-03-26T21:30:47Z",
+    "commit": "61acdcc",
+    "status": "pass",
+    "failures": [
+      ""
+    ]
+  },
+  {
+    "timestamp": "2026-04-12T08:12:53Z",
+    "commit": "5d6a42f",
+    "status": "pass",
+    "failures": [
+      ""
+    ]
+  },
+  {
+    "timestamp": "2026-04-12T09:32:39Z",
+    "commit": "0c6fc64",
+    "status": "pass",
+    "failures": [
+      ""
+    ]
+  },
+  {
+    "timestamp": "2026-04-12T09:33:59Z",
+    "commit": "0c6fc64",
+    "status": "pass",
+    "failures": [
+      ""
+    ]
+  },
+  {
+    "timestamp": "2026-04-17T10:41:13Z",
+    "commit": "9409553",
+    "status": "pass",
+    "failures": [
+      ""
+    ]
+  },
+  {
+    "timestamp": "2026-04-17T11:19:55Z",
+    "commit": "2f1f073",
+    "status": "pass",
+    "failures": [
+      ""
+    ]
   }
 ]

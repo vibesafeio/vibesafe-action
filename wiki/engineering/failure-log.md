@@ -55,8 +55,14 @@ sources: [docs/failure-log.md]
 - **교훈**: Docker + git = 반드시 safe.directory 설정. Semgrep은 이 실패에 exit 0 반환 (silent failure).
 - **방어**: action_entrypoint.sh에 `git config --global --add safe.directory` 추가
 
+### 2026-04-15: password-comparison-timing-js 전역 오탐
+- **원인**: Semgrep의 `password-comparison-timing-js` 규칙이 모든 `===` 비교를 잡음. 실제 비밀번호 비교와 무관한 코드까지 critical로 보고.
+- **결과**: 클린 프로젝트에서도 거짓 경고 발생 → 리더보드 점수 왜곡
+- **교훈**: 고 오탐률 규칙은 NOISY_RULES 필터에 등록하는 구조적 방어가 필요.
+- **방어**: `tools/shared.py`의 NOISY_RULES에 `password-comparison-timing` 등록 (커밋 9409553).
+
 ## Open Questions
-- password-comparison-timing-js 규칙 오탐 (모든 === 비교를 잡음) — 아직 미해결
+- (없음)
 
 ## Related
 - [[engineering/hard-rules.md]]

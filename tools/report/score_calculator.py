@@ -134,10 +134,12 @@ def calculate_score(
     triage_mode: bool = False,
     raw_input: list[dict] | None = None,
     detected_stack: list[str] | None = None,
+    verbose: bool = False,
 ) -> dict:
     """모든 스캔 결과를 종합하여 최종 보안 점수를 산출한다."""
 
     all_vulns = []
+    deductions: list[dict] = []
 
     if raw_input:
         all_vulns = raw_input
@@ -179,6 +181,16 @@ def calculate_score(
         weighted_penalty = base_penalty * weight
         score -= weighted_penalty
 
+        deductions.append({
+            "rule_id": vuln.get("rule_id", ""),
+            "type": vuln_type,
+            "severity": severity,
+            "source": vuln.get("source", "unknown"),
+            "base_penalty": base_penalty,
+            "weight": round(weight, 2),
+            "deduction": round(weighted_penalty, 2),
+        })
+
         # 심각도별 카운트 (가중 적용 후 심각도 상향 조정)
         effective_cvss = min(BASE_CVSS.get(severity, 5.0) * weight, 10.0)
         if effective_cvss >= 9.0:
@@ -195,6 +207,13 @@ def calculate_score(
     score = max(0, min(100, round(score)))
 
     grade = "A" if score >= 90 else "B" if score >= 75 else "C" if score >= 60 else "D" if score >= 40 else "F"
+
+    # Grade cap: high >= 1 caps grade at B. Prevents a single high severity
+    # from shipping with an A grade under domain weights that don't penalize enough.
+    grade_capped = False
+    if counts["high"] >= 1 and grade == "A":
+        grade = "B"
+        grade_capped = True
 
     # ─── Certified 배지 발급 조건 ─────────────────────────────────────────
     # hard gate 1: severity (점수 무관하게 critical/high 1개라도 있으면 미발급)
@@ -229,15 +248,19 @@ def calculate_score(
         elif score < 85:
             certified_block_reason = f"score below threshold ({score}/85)"
 
-    return {
+    result = {
         "score": score,
         "grade": grade,
+        "grade_capped": grade_capped,
         "domain": domain,
         "total_vulnerabilities": len(all_vulns),
         **counts,
         "certified": certified,
         "certified_block_reason": certified_block_reason,
     }
+    if verbose:
+        result["deductions"] = sorted(deductions, key=lambda d: -d["deduction"])
+    return result
 
 
 def main():
@@ -249,6 +272,7 @@ def main():
     parser.add_argument("--triage", action="store_true", help="트리아지 모드 (원시 취약점 입력)")
     parser.add_argument("--input", help="트리아지 모드 입력 JSON 파일")
     parser.add_argument("--stack-file", help="스택 탐지 결과 JSON (프레임워크 충돌 필터용)")
+    parser.add_argument("--verbose", action="store_true", help="per-item 차감 breakdown 포함")
     args = parser.parse_args()
 
     raw_input = None
@@ -270,6 +294,7 @@ def main():
         triage_mode=args.triage,
         raw_input=raw_input,
         detected_stack=detected_stack,
+        verbose=args.verbose,
     )
 
     print(json.dumps(result, ensure_ascii=False, indent=2))

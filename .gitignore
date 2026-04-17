@@ -39,3 +39,10 @@ out/
 
 # 테스트 실패 로그 (로컬 전용)
 test/failure_log.json
+
+# R/RStudio 로컬 상태
+.Rhistory
+**/.Rhistory
+
+# 분리된 실험 repo (별도 git 관리)
+vibecost-test/

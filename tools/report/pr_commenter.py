@@ -347,6 +347,9 @@ def build_comment_body(score: dict, sarif_path: str = "/tmp/sast.sarif",
     grade_emoji = {"A": "\U0001f7e2", "B": "\U0001f7e1", "C": "\U0001f7e0", "D": "\U0001f534", "F": "\U0001f534"}.get(grade, "\u26aa")
     cert_badge = " \u2705 **Certified**" if certified else ""
     cert_block = f"\n> Not certified: {block_reason}" if block_reason else ""
+    grade_cap_note = ""
+    if score.get("grade_capped"):
+        grade_cap_note = "\n> Grade capped at **B** (1+ high severity blocks Grade A)"
 
     if critical > 0:
         summary = f"{critical} critical vulnerabilities found — fix immediately"
@@ -364,6 +367,7 @@ def build_comment_body(score: dict, sarif_path: str = "/tmp/sast.sarif",
         "",
         f"{grade_emoji} **{points}/100** (Grade {grade}){cert_badge}",
         cert_block,
+        grade_cap_note,
         "",
         f"> {summary}",
         "",
