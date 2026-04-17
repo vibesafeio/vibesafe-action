@@ -14,11 +14,27 @@ Phase 1 KPI 목표: Stars 100, Installs 50, Re-run 50%.
 ## Content
 
 ### Phase 1 KPI
-| Metric | Target | Current | Gap |
-|--------|--------|---------|-----|
-| Stars | 100 / 4주 | **4** | 96 부족 |
-| Action installs | 50 repos / 4주 | **0** | 50 부족 |
+| Metric | Target | Current (2026-04-17 20:46 KST) | Gap |
+|--------|--------|--------------------------------|-----|
+| Stars | 100 / 4주 | **6** | 94 부족 |
+| Action installs | 50 repos / 4주 | **0 (install_clicks)** | 50 부족 |
 | Re-run rate | 50%+ | N/A | 데이터 없음 |
+
+### Baseline Snapshot (2026-04-17 20:46 KST)
+P0 (UTM + Marketplace + Install CTA) 배포 직후 측정. Day+3 (2026-04-20) 비교 기준.
+
+| 지표 | 값 |
+|------|-----|
+| Stars | 6 |
+| Forks | 1 |
+| Watchers | 0 |
+| Render `page_views` (생애) | 3 |
+| Render `scans_started` | 2 |
+| Render `scans_completed` | 1 |
+| Render `install_clicks` | **0** |
+| Render `fix_copies` | 0 |
+| GitHub Marketplace | ✅ HTTP 200 (listing live) |
+| Marketplace "Latest" tag | ⚠️ v0.1.0 (user action: set v0.1.1 as latest) |
 
 ### 채널별 성과
 | 채널 | 지표 | 날짜 |
@@ -26,8 +42,9 @@ Phase 1 KPI 목표: Stars 100, Installs 50, Re-run 50%.
 | OKKY | 772뷰, 댓글 3개 | 2026-04-11 |
 | dev.to | 0 반응 | 2026-04-12 |
 | GeekNews | 게시 완료, 대기 중 | 2026-04-12 |
-| 웹 스캐너 | 1 page view, 0 scans (재배포 리셋) | 2026-04-12 |
+| 웹 스캐너 | 3 page views, 2 scans 시도 (1 성공, 1 실패) | 2026-04-17 |
 | GitHub | 19 views, 22 clones (14d) | 2026-04-12 |
+| Marketplace | 등재 완료 | 2026-04-17 |
 
 ### 메트릭 대시보드
 - 웹: `vibesafe.onrender.com/api/metrics`

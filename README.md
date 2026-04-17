@@ -10,7 +10,7 @@ Paste your GitHub URL. Get your safety score in 30 seconds. We'll tell you exact
 
 **No signup. No install. Free.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![GitHub Marketplace](https://img.shields.io/badge/GitHub-Marketplace-2ea44f?logo=github)](https://github.com/marketplace/actions/vibesafe-security-scan?utm_source=github&utm_medium=readme_badge&utm_campaign=launch) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
 
