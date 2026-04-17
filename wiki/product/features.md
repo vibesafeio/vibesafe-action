@@ -3,13 +3,13 @@ title: VibeSafe Features
 type: product
 confidence: high
 created: 2026-03-18
-updated: 2026-04-12
+updated: 2026-04-17
 sources: [docs/architecture.md, docs/auto_fix_design.md, docs/mcp_server_design.md]
 ---
 
 ## TLDR
-SAST + Secret + 도메인규칙 + Fix제안 + 머지차단 + 웹스캐너 + 리더보드.
-Pre-commit hook과 MCP 서버 구현 완료. SCA와 뱃지는 미구현.
+SAST + SCA + Secret + Config(Supabase/Firebase) + 도메인규칙 + Fix제안 + AI Fix Prompt + 머지차단 + 웹스캐너 + CLI스캐너 + 리더보드 + PR코멘트 접기.
+Pre-commit hook, MCP 서버, SCA, Config Scanner 구현 완료.
 
 ## Content
 
@@ -30,9 +30,16 @@ Pre-commit hook과 MCP 서버 구현 완료. SCA와 뱃지는 미구현.
 | Pre-commit hook | 커밋 전 secret 탐지 | ✅ |
 | MCP 서버 | Claude Code/Cursor 연동 (check_secret) | ✅ |
 | 접근성 | img alt, label, lang 등 | ✅ (light) |
-| SCA | 의존성 CVE 스캔 | ❌ |
-| 뱃지 | README용 점수 뱃지 | ❌ |
-| Diff-only | 변경된 코드만 스캔 | ❌ |
+| SCA | pip-audit + npm audit 의존성 CVE 스캔 | ✅ |
+| Config Scanner | Supabase RLS + Firebase Rules 검사 | ✅ |
+| CLI 스캐너 | `python3 cli_scanner.py <url>` 즉시 스캔 | ✅ |
+| AI Fix Prompt | 전체 findings → Cursor/Claude 복사용 프롬프트 생성 | ✅ |
+| .env.example 생성 | 시크릿 발견 시 환경변수 템플릿 자동 생성 | ✅ |
+| .gitignore 감사 | .env 미포함 시 경고 | ✅ |
+| PR 코멘트 접기 | Top 5 인라인, 나머지 `<details>` 접기 | ✅ |
+| Custom Rules | `custom-rules` input으로 사용자 YAML 추가 | ✅ |
+| 뱃지 | shields.io dynamic badge 가이드 | ✅ |
+| Diff-only | 변경된 코드만 스캔 | ❌ (Semgrep Pro 전용) |
 
 ### Fix 제안 패턴 (Phase 1)
 | Semgrep Rule | Fix Type | 변환 |

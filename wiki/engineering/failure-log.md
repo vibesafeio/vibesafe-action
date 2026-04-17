@@ -3,15 +3,21 @@ title: Failure Log
 type: engineering
 confidence: high
 created: 2026-03-18
-updated: 2026-04-12
+updated: 2026-04-17
 sources: [docs/failure-log.md]
 ---
 
 ## TLDR
-프로덕션 버그 6건 기록. 가장 위험한 패턴: 에러 없이 빈 결과를 반환하는 silent failure.
+프로덕션 버그 7건 기록. 가장 위험한 패턴: 에러 없이 빈 결과를 반환하는 silent failure.
 모든 버그에 방어 조치 추가됨.
 
 ## Content
+
+### 2026-04-17: Render 웹서비스 OOM (메모리 초과 재시작)
+- **원인**: (1) SCANS dict 무한 증가 — 스캔 결과를 메모리에 계속 쌓고 삭제 안 함. (2) Semgrep 메모리 400MB 설정이 Render free tier 512MB에서 여유 없음. (3) OOM kill 시 /tmp 클론 디렉토리 미정리.
+- **결과**: 웹 스캐너 반복 재시작, 사용자 스캔 중단
+- **교훈**: in-memory 저장소는 반드시 상한선 필요. 외부 서비스의 메모리 제한을 코드에 반영해야 함.
+- **방어**: MAX_SCANS=50 LRU 삭제, SEMGREP_MAX_MEMORY 256MB, finally 블록에 /tmp 정리 추가
 
 ### 2026-04-12: from __future__ import annotations가 shebang 위에 위치
 - **원인**: domain_rule_engine.py, secret_scanner.py 1행에 future import가 shebang 위에 있음

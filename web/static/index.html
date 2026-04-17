@@ -202,6 +202,25 @@
         </div>
         <p class="hint">Public GitHub repos only. Your code stays on our server only during the scan.</p>
 
+        <p style="margin-bottom:40px;">
+            <a href="#" id="peekBtn" onclick="showLeaderboardPreview(); return false;"
+               style="color:#4ade80; font-size:0.9rem; text-decoration:underline; cursor:pointer;">
+                See how other AI-built apps scored →
+            </a>
+        </p>
+
+        <div id="leaderboardPreview" style="display:none; margin-bottom:40px;">
+            <div class="burrow-section">
+                <h3>Score Distribution — AI-built apps scanned with VibeSafe</h3>
+                <canvas id="previewChart" width="320" height="120" style="image-rendering:pixelated;"></canvas>
+                <div class="burrow-stats" id="previewStats"></div>
+                <p style="color:#4ade80; font-size:0.9rem; margin-top:12px; cursor:pointer;"
+                   onclick="document.getElementById('repoUrl').focus();">
+                    Where does your app land? Scan to find out ↑
+                </p>
+            </div>
+        </div>
+
         <div id="scanning" class="scanning" style="display:none">
             <canvas id="wombatCanvas" width="360" height="160"></canvas>
             <div class="scan-dots" id="scanDots"></div>
@@ -214,6 +233,43 @@
 
     <script>
         let pollTimer = null;
+
+        async function showLeaderboardPreview() {
+            const el = document.getElementById('leaderboardPreview');
+            const btn = document.getElementById('peekBtn');
+            if (el.style.display !== 'none') { el.style.display = 'none'; return; }
+            el.style.display = 'block';
+            btn.textContent = 'Hide score distribution';
+            try {
+                const res = await fetch('/api/leaderboard');
+                const data = await res.json();
+                const canvas = document.getElementById('previewChart');
+                const ctx = canvas.getContext('2d');
+                const buckets = data.buckets || [];
+                const max = Math.max(...buckets, 1);
+                const w = canvas.width, h = canvas.height;
+                ctx.clearRect(0, 0, w, h);
+                const barW = Math.floor(w / buckets.length) - 4;
+                const colors = ['#ef4444','#ef4444','#ef4444','#f97316','#f97316','#eab308','#eab308','#22c55e','#22c55e','#22c55e'];
+                for (let i = 0; i < buckets.length; i++) {
+                    const barH = Math.round((buckets[i] / max) * (h - 20));
+                    const x = i * (barW + 4) + 2;
+                    ctx.fillStyle = colors[i] || '#666';
+                    ctx.fillRect(x, h - 20 - barH, barW, barH);
+                    ctx.fillStyle = '#666';
+                    ctx.font = '10px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(i * 10 + '-' + (i * 10 + 9), x + barW / 2, h - 4);
+                }
+                const stats = document.getElementById('previewStats');
+                stats.innerHTML = `
+                    <span><strong>${data.total}</strong> apps scanned</span>
+                    <span>Average: <strong>${data.average}/100</strong></span>
+                `;
+            } catch (e) {
+                document.getElementById('previewStats').textContent = 'Could not load data';
+            }
+        }
 
         async function startScan() {
             let url = document.getElementById('repoUrl').value.trim();
