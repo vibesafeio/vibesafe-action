@@ -4,7 +4,7 @@
 
 [53% of AI-generated code has security vulnerabilities.](https://www.getautonoma.com/blog/vibe-coding-security-risks) [4,000+ accessibility lawsuits filed in 2024 alone.](https://www.audioeye.com/post/website-accessibility-in-2025/) Your AI doesn't check for any of this. VibeSafe does.
 
-## **[Scan your app now →](https://vibesafe.onrender.com)**
+## **[Scan your app now →](https://vibesafe.onrender.com/?utm_source=github&utm_medium=readme&utm_campaign=launch)**
 
 Paste your GitHub URL. Get your safety score in 30 seconds. We'll tell you exactly what's wrong and give you a prompt to paste into your AI to fix everything.
 
@@ -331,6 +331,6 @@ JavaScript, TypeScript, Python, Java, Go, Ruby, PHP, Kotlin, and more.
 
 ---
 
-**[Scan your app now →](https://vibesafe.onrender.com)**
+**[Scan your app now →](https://vibesafe.onrender.com/?utm_source=github&utm_medium=readme_footer&utm_campaign=launch)**
 
 <sub>Open source · Built with [Semgrep](https://semgrep.dev)</sub>

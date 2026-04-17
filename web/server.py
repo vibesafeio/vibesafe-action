@@ -115,7 +115,12 @@ class VibeSafeHandler(SimpleHTTPRequestHandler):
 
         # Serve static files
         if parsed.path == "/":
-            log_event("page_views")
+            qs = parse_qs(parsed.query)
+            utm_source = qs.get("utm_source", [""])[0][:40]
+            utm_medium = qs.get("utm_medium", [""])[0][:40]
+            utm_campaign = qs.get("utm_campaign", [""])[0][:40]
+            detail = f"utm={utm_source}/{utm_medium}/{utm_campaign}" if utm_source else "utm=direct"
+            log_event("page_views", detail)
             self._serve_file(STATIC_DIR / "index.html", "text/html")
         elif parsed.path.startswith("/static/"):
             file_path = STATIC_DIR / parsed.path[8:]

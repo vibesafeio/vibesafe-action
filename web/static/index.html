@@ -451,6 +451,29 @@
                         </div>
                     `;
                 });
+
+                // Prominent Install CTA — primary conversion point (P0-B)
+                html += `
+                    <div style="margin:24px 0; padding:24px; background:linear-gradient(135deg,#064e3b,#065f46); border:2px solid #10b981; border-radius:12px; text-align:center;">
+                        <div style="font-size:1.15rem; font-weight:600; color:#fff; margin-bottom:8px;">Catch these on every PR — install in 30 seconds</div>
+                        <p style="color:#a7f3d0; margin-bottom:16px; font-size:0.9rem;">This was a one-time scan. Add VibeSafe as a GitHub Action to block vulnerable PRs before merge.</p>
+                        <div style="background:#0a0a0a; padding:12px; border-radius:6px; text-align:left; margin-bottom:12px;">
+                            <pre style="color:#ccc; font-size:0.78rem; margin:0; overflow-x:auto; white-space:pre-wrap;"># .github/workflows/vibesafe.yml
+name: VibeSafe
+on: [pull_request]
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vibesafeio/vibesafe-action@v0</pre>
+                        </div>
+                        <button onclick="copyInstallYaml(this)" class="copy-btn" style="background:#10b981; color:#000; font-weight:700; font-size:1rem; padding:12px 28px; border:none; border-radius:8px; cursor:pointer;">Copy YAML &amp; open GitHub &rarr;</button>
+                    </div>
+                `;
             }
 
             // Wombat Burrow leaderboard section (hidden until data loads)
@@ -520,7 +543,7 @@ jobs:
       - uses: vibesafeio/vibesafe-action@v0</pre>
                             <button class="copy-btn" onclick="navigator.clipboard.writeText(document.querySelector('#results pre').textContent).then(()=>{this.textContent='Copied!'})">Copy YAML</button>
                         </div>
-                        <p style="color:#555; font-size:0.8rem;">Or <a href="https://github.com/vibesafeio/vibesafe-action" style="color:#4ade80;">view setup guide</a></p>
+                        <p style="color:#555; font-size:0.8rem;">Or <a href="https://github.com/vibesafeio/vibesafe-action?utm_source=scanner&utm_medium=result_page&utm_campaign=install" style="color:#4ade80;">view setup guide</a></p>
                     </div>
                 `;
             } else if (isNotFound) {
@@ -557,10 +580,29 @@ jobs:
 
         function trackInstall() { fetch('/api/event?e=install_clicks'); }
 
+        function copyInstallYaml(btn) {
+            const yaml = `name: VibeSafe
+on: [pull_request]
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vibesafeio/vibesafe-action@v0`;
+            navigator.clipboard.writeText(yaml).then(() => {
+                btn.textContent = 'Copied — opening GitHub...';
+                trackInstall();
+                setTimeout(() => window.open(getInstallUrl(), '_blank'), 700);
+            });
+        }
+
         function getInstallUrl() {
             const repoUrl = document.getElementById('repoUrl').value.trim();
             const match = repoUrl.match(/github\.com\/([^\/]+\/[^\/]+)/);
-            if (!match) return 'https://github.com/vibesafeio/vibesafe-action';
+            if (!match) return 'https://github.com/vibesafeio/vibesafe-action?utm_source=scanner&utm_medium=result_page&utm_campaign=install';
             const yaml = `name: VibeSafe
 on: [pull_request]
 jobs:
