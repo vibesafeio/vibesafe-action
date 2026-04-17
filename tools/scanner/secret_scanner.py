@@ -34,7 +34,22 @@ SECRET_PATTERNS = [
 
 SKIP_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".woff", ".woff2",
                    ".ttf", ".eot", ".pdf", ".zip", ".tar", ".gz", ".lock"}
-SKIP_DIRS = {"node_modules", ".git", ".venv", "venv", "dist", "build", "__pycache__", ".next"}
+# Test/fixture paths are a dominant false-positive source for secret detection.
+# Intentional fake keys in fixtures get flagged as critical, tanking scores for
+# any project with a test suite. Users rarely hardcode real secrets in test code
+# that ships to prod, so exclusion is a net win. Real leaks in prod code are
+# still caught (far more common attack surface).
+SKIP_DIRS = {
+    # Build/dep artifacts
+    "node_modules", ".git", ".venv", "venv", "dist", "build", "__pycache__", ".next",
+    # Test/fixture paths (common false-positive sources)
+    "test", "tests", "__tests__", "spec", "specs",
+    "fixture", "fixtures",
+    "example", "examples", "sample", "samples",
+    "mock", "mocks", "__mocks__",
+    "demo", "demos",
+    "e2e", "cypress", "playwright",
+}
 
 # 저엔트로피 예시 값 (오탐 제거)
 PLACEHOLDER_PATTERNS = re.compile(
