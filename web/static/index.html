@@ -423,7 +423,6 @@
                         <div style="font-size:2rem; margin-bottom:8px;">Your app looks safe!</div>
                         <p style="color:#86efac;">We checked for ${checkedList} — nothing found.</p>
                         ${langs.length > 0 ? '<p style="color:#666; margin-top:8px; font-size:0.85rem;">Scanned: ' + langs.join(', ') + (detected.length > 0 ? ' (' + detected.join(', ') + ')' : '') + '</p>' : ''}
-                        <p style="color:#666; margin-top:12px; font-size:0.9rem;">Want this on every code change? <a href="#" onclick="trackInstall();window.open(getInstallUrl())" style="color:#4ade80;">Add VibeSafe to your repo (one click)</a></p>
                     </div>
                 `;
             }
@@ -461,29 +460,6 @@
                         </div>
                     `;
                 });
-
-                // Prominent Install CTA — primary conversion point (P0-B)
-                html += `
-                    <div style="margin:24px 0; padding:24px; background:linear-gradient(135deg,#064e3b,#065f46); border:2px solid #10b981; border-radius:12px; text-align:center;">
-                        <div style="font-size:1.15rem; font-weight:600; color:#fff; margin-bottom:8px;">Catch these on every PR — install in 30 seconds</div>
-                        <p style="color:#a7f3d0; margin-bottom:16px; font-size:0.9rem;">This was a one-time scan. Add VibeSafe as a GitHub Action to block vulnerable PRs before merge.</p>
-                        <div style="background:#0a0a0a; padding:12px; border-radius:6px; text-align:left; margin-bottom:12px;">
-                            <pre style="color:#ccc; font-size:0.78rem; margin:0; overflow-x:auto; white-space:pre-wrap;"># .github/workflows/vibesafe.yml
-name: VibeSafe
-on: [pull_request]
-jobs:
-  scan:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: vibesafeio/vibesafe-action@v0</pre>
-                        </div>
-                        <button onclick="copyInstallYaml(this)" class="copy-btn" style="background:#10b981; color:#000; font-weight:700; font-size:1rem; padding:12px 28px; border:none; border-radius:8px; cursor:pointer;">Copy YAML &amp; open GitHub &rarr;</button>
-                    </div>
-                `;
             }
 
             // Wombat Burrow leaderboard section (hidden until data loads)
@@ -504,18 +480,6 @@ jobs:
                     <strong style="color:#aaa;">How we check:</strong> VibeSafe uses <a href="https://semgrep.dev" style="color:#4ade80;" target="_blank">Semgrep</a>, the same static analysis engine used by Snowflake, Dropbox, and Slack. We scan for <a href="https://owasp.org/www-project-top-ten/" style="color:#4ade80;" target="_blank">OWASP Top 10</a> vulnerabilities and <a href="https://www.w3.org/WAI/WCAG21/quickref/" style="color:#4ade80;" target="_blank">WCAG 2.1</a> accessibility standards — the same checklists that security auditors and ADA lawyers use.
                 </div>
             `;
-
-            // Light mode notice
-            const scanMode = results.scan_mode || 'light';
-            if (scanMode === 'light') {
-                html += `
-                    <div style="text-align:center; padding:16px; margin-top:24px; background:#111; border-radius:8px; color:#666; font-size:0.85rem;">
-                        This was a quick scan (AI code patterns + secrets + accessibility).
-                        For a full scan (500+ rules, dependency CVEs, config checks),
-                        <a href="#" onclick="trackInstall();window.open(getInstallUrl())" style="color:#4ade80;">add VibeSafe to your repo</a>.
-                    </div>
-                `;
-            }
 
             document.getElementById('results').innerHTML = html;
             document.getElementById('results').style.display = 'block';
@@ -632,43 +596,6 @@ jobs:
 
         function trackInstall() { fetch('/api/event?e=install_clicks'); }
 
-        function copyInstallYaml(btn) {
-            const yaml = `name: VibeSafe
-on: [pull_request]
-jobs:
-  scan:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: vibesafeio/vibesafe-action@v0`;
-            navigator.clipboard.writeText(yaml).then(() => {
-                btn.textContent = 'Copied — opening GitHub...';
-                trackInstall();
-                setTimeout(() => window.open(getInstallUrl(), '_blank'), 700);
-            });
-        }
-
-        function getInstallUrl() {
-            const repoUrl = document.getElementById('repoUrl').value.trim();
-            const match = repoUrl.match(/github\.com\/([^\/]+\/[^\/]+)/);
-            if (!match) return 'https://github.com/vibesafeio/vibesafe-action?utm_source=scanner&utm_medium=result_page&utm_campaign=install';
-            const yaml = `name: VibeSafe
-on: [pull_request]
-jobs:
-  scan:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: vibesafeio/vibesafe-action@v0`;
-            return `https://github.com/${match[1]}/new/main?filename=.github/workflows/vibesafe.yml&value=${encodeURIComponent(yaml)}`;
-        }
-
         // Wombat Burrow Distribution
         async function loadBurrow(myScore) {
             try {
@@ -695,162 +622,126 @@ jobs:
         }
 
         function drawBurrow(canvas, buckets, myScore) {
+            // Conventional bar chart (upright), pixel-art dirt bars on a grass line.
+            // Bars grow UP from grass → "taller = more" matches standard bar-chart intuition.
+            // Keeps the pixel-art + wombat brand via a mini wombat sitting on the user's bar.
             const W = 360, H = 180;
             canvas.width = W; canvas.height = H;
             const ctx = canvas.getContext('2d');
 
             const maxB = Math.max(...buckets, 1);
-            // Normalize bucket heights (0-1)
             const norm = buckets.map(b => b / maxB);
 
             // Colors
-            const DIRT = '#3D3225';
-            const DIRT_LIGHT = '#5C4A36';
-            const TUNNEL = '#1a1200';
-            const GRASS_1 = '#5D8035';
-            const GRASS_2 = '#4A6B2A';
-            const LINE_COL = '#4ade80';
+            const DIRT       = '#6B5439';
+            const DIRT_TOP   = '#8A7055';
+            const DIRT_DARK  = '#4A3C2A';
+            const GRASS_1    = '#5D8035';
+            const GRASS_2    = '#4A6B2A';
+            const SKY        = '#0a0a0a';
+            const LINE_COL   = '#4ade80';
+            const LABEL_COL  = '#888';
 
-            // Layout
-            const grassY = 25;
-            const tunnelTop = 40;
-            const tunnelMaxH = 100;
-            const bucketW = W / 10;
+            // Layout (flipped: grass at bottom, bars grow up)
+            const grassY    = 148;     // top of grass strip
+            const grassH    = 4;       // grass strip thickness
+            const barBaseY  = grassY;  // bars sit on grass
+            const maxBarH   = 115;     // max bar height in pixels
+            const bucketW   = W / 10;
 
-            // Background: dark earth
-            ctx.fillStyle = '#0a0a0a';
+            // Sky / background
+            ctx.fillStyle = SKY;
             ctx.fillRect(0, 0, W, H);
 
-            // Draw dirt fill
-            ctx.fillStyle = DIRT;
-            ctx.fillRect(0, grassY + 4, W, H - grassY);
-
-            // Draw tunnel (carved out of dirt)
-            // Smooth the curve with interpolation
-            const pts = [];
+            // Bars — pixel-art dirt columns growing up
             for (let i = 0; i < 10; i++) {
-                const cx = bucketW * i + bucketW / 2;
-                const h = norm[i] * tunnelMaxH;
-                pts.push({ x: cx, y: tunnelTop, h: h });
-            }
+                const h = norm[i] * maxBarH;
+                if (h < 1) continue;
+                const x = Math.round(i * bucketW + 1);
+                const y = Math.round(barBaseY - h);
+                const w = Math.round(bucketW - 2);
 
-            // Draw tunnel shape
-            ctx.beginPath();
-            ctx.moveTo(0, tunnelTop);
-            for (let i = 0; i < pts.length; i++) {
-                const p = pts[i];
-                const bottom = tunnelTop + p.h;
-                if (i === 0) {
-                    ctx.lineTo(p.x - bucketW/2, tunnelTop);
+                // Body
+                ctx.fillStyle = DIRT;
+                ctx.fillRect(x, y, w, h);
+                // Top highlight (lighter 2px strip)
+                ctx.fillStyle = DIRT_TOP;
+                ctx.fillRect(x, y, w, 2);
+                // Right shadow
+                ctx.fillStyle = DIRT_DARK;
+                ctx.fillRect(x + w - 2, y + 2, 2, h - 2);
+
+                // Sparse texture dots (deterministic-ish via index)
+                for (let t = 0; t < 5; t++) {
+                    const tx = x + 2 + ((i * 7 + t * 13) % Math.max(w - 4, 1));
+                    const ty = y + 4 + ((i * 11 + t * 17) % Math.max(h - 6, 1));
+                    ctx.fillStyle = (t % 2 === 0) ? DIRT_DARK : DIRT_TOP;
+                    ctx.fillRect(tx, ty, 1, 1);
                 }
-                // Smooth curve to bottom
-                const prevX = i > 0 ? pts[i-1].x : p.x - bucketW;
-                const prevH = i > 0 ? pts[i-1].h : 0;
-                const prevBottom = tunnelTop + prevH;
-                ctx.bezierCurveTo(
-                    prevX + bucketW * 0.7, prevBottom,
-                    p.x - bucketW * 0.3, bottom,
-                    p.x, bottom
-                );
-            }
-            // Close right side
-            const lastP = pts[pts.length - 1];
-            ctx.bezierCurveTo(
-                lastP.x + bucketW * 0.3, tunnelTop + lastP.h,
-                W, tunnelTop,
-                W, tunnelTop
-            );
-            ctx.lineTo(W, tunnelTop);
-            ctx.closePath();
 
-            // Fill tunnel with dark color
-            ctx.fillStyle = TUNNEL;
-            ctx.fill();
-
-            // Add some texture dots in tunnel
-            for (let i = 0; i < 40; i++) {
-                const x = Math.random() * W;
-                const bIdx = Math.min(Math.floor(x / bucketW), 9);
-                const maxH = norm[bIdx] * tunnelMaxH;
-                if (maxH < 5) continue;
-                const y = tunnelTop + Math.random() * maxH;
-                ctx.fillStyle = `rgba(61, 50, 37, ${Math.random() * 0.3})`;
-                ctx.fillRect(x, y, 2, 2);
+                // Bucket count on top of bar
+                if (buckets[i] > 0 && h > 10) {
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 11px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(buckets[i], x + w / 2, y - 4);
+                }
             }
 
-            // Draw grass on top
+            // Grass strip — thin horizontal pixel pattern
             for (let x = 0; x < W; x += 4) {
                 ctx.fillStyle = x % 8 === 0 ? GRASS_1 : GRASS_2;
-                ctx.fillRect(x, grassY, 4, 5);
-                // Grass blades
-                if (Math.random() > 0.6) {
-                    ctx.fillStyle = GRASS_1;
-                    ctx.fillRect(x + 1, grassY - 3 - Math.random() * 4, 2, 5);
-                }
+                ctx.fillRect(x, grassY, 4, grassH);
             }
 
-            // Dirt texture on top
-            for (let i = 0; i < 30; i++) {
-                const x = Math.random() * W;
-                const y = grassY + 5 + Math.random() * 10;
-                ctx.fillStyle = Math.random() > 0.5 ? DIRT_LIGHT : DIRT;
-                ctx.fillRect(x, y, 3, 2);
-            }
-
-            // Score labels at bottom
-            ctx.fillStyle = '#555';
+            // X-axis labels (score range) under the grass
+            ctx.fillStyle = LABEL_COL;
             ctx.font = '10px monospace';
             ctx.textAlign = 'center';
             for (let i = 0; i <= 10; i++) {
-                ctx.fillText(i * 10, i * bucketW, H - 3);
+                ctx.fillText(i * 10, i * bucketW, grassY + 18);
             }
 
-            // Vertical line + wombat marker — only when myScore provided (skip in preview)
+            // User marker — dashed line + "You" label + wombat on top of user's bar
             if (typeof myScore === 'number') {
                 const scoreX = (myScore / 100) * W;
+                const bIdx = Math.min(Math.floor(myScore / 10), 9);
+                const barH = norm[bIdx] * maxBarH;
+                const barTopY = barBaseY - barH;
+
+                // Dashed vertical line from top to grass
                 ctx.strokeStyle = LINE_COL;
                 ctx.lineWidth = 2;
                 ctx.setLineDash([4, 3]);
                 ctx.beginPath();
-                ctx.moveTo(scoreX, grassY - 5);
-                ctx.lineTo(scoreX, H - 12);
+                ctx.moveTo(scoreX, 4);
+                ctx.lineTo(scoreX, grassY + 2);
                 ctx.stroke();
                 ctx.setLineDash([]);
 
+                // "▼ You" label near top
                 ctx.fillStyle = LINE_COL;
                 ctx.font = 'bold 11px -apple-system, sans-serif';
-                ctx.textAlign = scoreX > W * 0.8 ? 'right' : scoreX < W * 0.2 ? 'left' : 'center';
-                ctx.fillText('▼ You', scoreX, grassY - 8);
+                ctx.textAlign = scoreX > W * 0.85 ? 'right' : scoreX < W * 0.15 ? 'left' : 'center';
+                ctx.fillText('▼ You', scoreX, 14);
 
-                const bIdx = Math.min(Math.floor(myScore / 10), 9);
-                const tunnelH = norm[bIdx] * tunnelMaxH;
-                if (tunnelH > 15) {
-                    const wx = scoreX - 8;
-                    const wy = tunnelTop + tunnelH * 0.5 - 5;
+                // Wombat sitting on top of user's bucket (only if bar has real height)
+                if (barH > 8) {
+                    const wx = Math.round(scoreX - 6);
+                    const wy = Math.round(barTopY - 10);
+                    // Body
                     ctx.fillStyle = '#9B7B5E';
-                    ctx.fillRect(wx, wy, 4, 3);
-                    ctx.fillRect(wx+4, wy-1, 3, 4);
-                    ctx.fillRect(wx+7, wy, 3, 3);
-                    ctx.fillRect(wx+10, wy+1, 2, 2);
+                    ctx.fillRect(wx,     wy + 2, 4, 4);
+                    ctx.fillRect(wx + 4, wy + 1, 3, 5);
+                    ctx.fillRect(wx + 7, wy + 2, 3, 4);
+                    ctx.fillRect(wx + 10, wy + 3, 2, 2); // tail
+                    // Belly
                     ctx.fillStyle = '#B8967A';
-                    ctx.fillRect(wx+1, wy+1, 2, 1);
-                    ctx.fillRect(wx+5, wy, 2, 2);
+                    ctx.fillRect(wx + 1, wy + 4, 2, 2);
+                    ctx.fillRect(wx + 5, wy + 3, 2, 2);
+                    // Eye
                     ctx.fillStyle = '#2C2216';
-                    ctx.fillRect(wx+2, wy, 1, 1);
-                }
-            }
-
-            // Bucket count labels inside tunnel
-            ctx.fillStyle = 'rgba(255,255,255,0.3)';
-            ctx.font = '9px monospace';
-            ctx.textAlign = 'center';
-            for (let i = 0; i < 10; i++) {
-                if (buckets[i] > 0) {
-                    const cx = bucketW * i + bucketW / 2;
-                    const h = norm[i] * tunnelMaxH;
-                    if (h > 15) {
-                        ctx.fillText(buckets[i], cx, tunnelTop + h * 0.7);
-                    }
+                    ctx.fillRect(wx + 2, wy + 3, 1, 1);
                 }
             }
         }
