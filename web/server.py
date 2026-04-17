@@ -20,8 +20,9 @@ import tempfile
 import shutil
 
 
-# In-memory scan results store
+# In-memory scan results store (capped to prevent OOM)
 SCANS: dict[str, dict] = {}
+MAX_SCANS = 50  # evict oldest when exceeded
 
 # Leaderboard — all completed scan scores (in-memory, resets on deploy)
 # Seed with realistic distribution from actual AI-generated project scans
@@ -150,6 +151,10 @@ class VibeSafeHandler(SimpleHTTPRequestHandler):
                 return
 
             scan_id = str(uuid.uuid4())[:8]
+            # Evict oldest scans to prevent memory growth
+            while len(SCANS) >= MAX_SCANS:
+                oldest = next(iter(SCANS))
+                del SCANS[oldest]
             SCANS[scan_id] = {"status": "scanning", "url": repo_url}
             log_event("scans_started", repo_url)
 
@@ -170,7 +175,7 @@ class VibeSafeHandler(SimpleHTTPRequestHandler):
                 [sys.executable, str(PROJECT_DIR / "tools" / "cli_scanner.py"),
                  repo_url, "--json", "--light"],
                 capture_output=True, text=True, timeout=90,
-                env={**os.environ, "SEMGREP_MAX_MEMORY": "400"},
+                env={**os.environ, "SEMGREP_MAX_MEMORY": "256"},
             )
             if result.returncode == 0:
                 scan_data = json.loads(result.stdout)
@@ -194,6 +199,11 @@ class VibeSafeHandler(SimpleHTTPRequestHandler):
             SCANS[scan_id] = {"status": "error", "url": repo_url, "error": "This repo is too large for our free scanner. Try a smaller repo, or install the GitHub Action for unlimited scanning."}
         except Exception as e:
             SCANS[scan_id] = {"status": "error", "url": repo_url, "error": str(e)}
+        finally:
+            # Clean up cloned repos immediately to free disk/memory
+            import glob
+            for tmp in glob.glob("/tmp/vibesafe-scan-*"):
+                shutil.rmtree(tmp, ignore_errors=True)
 
     def _json_response(self, data: dict, code: int = 200):
         self.send_response(code)
