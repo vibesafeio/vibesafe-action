@@ -161,10 +161,10 @@ def calculate_score(
         # 시크릿 결과
         if secret_result_file and secret_result_file.exists():
             secret_data = json.loads(secret_result_file.read_text())
-            for _ in secret_data.get("secrets", []):
+            for s in secret_data.get("secrets", []):
                 all_vulns.append({
                     "type": "hardcoded_secret",
-                    "severity": "critical",
+                    "severity": s.get("severity", "critical"),
                     "source": "secret_scanner",
                 })
 

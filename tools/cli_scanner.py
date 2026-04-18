@@ -186,8 +186,15 @@ def run_scan(source_path: Path, light: bool = False) -> dict:
                             medium_count += 1
             if secrets_path.exists():
                 sec = json.loads(secrets_path.read_text())
-                critical_count = len(sec.get("secrets", []))
-                total += critical_count
+                for s in sec.get("secrets", []):
+                    sev = s.get("severity", "critical")
+                    if sev == "critical":
+                        critical_count += 1
+                    elif sev == "high":
+                        high_count += 1
+                    elif sev == "medium":
+                        medium_count += 1
+                    total += 1
 
             score = max(0, 100 - (critical_count * 20) - (high_count * 10) - (medium_count * 4))
             grade = "A" if score >= 85 else "B" if score >= 70 else "C" if score >= 50 else "D" if score >= 25 else "F"

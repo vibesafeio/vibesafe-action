@@ -56,6 +56,65 @@ PLACEHOLDER_PATTERNS = re.compile(
     r"(?i)(your[_-]?api[_-]?key|example|placeholder|changeme|<[^>]+>|\$\{[^}]+\}|xxx+|test|demo|dummy|sample)"
 )
 
+# Non-production contexts: docs, test files, non-code artifacts.
+# Secrets here are either tutorial examples, test fixtures, or doc samples.
+# Real keys in these paths are still bad practice (esp. public README) but
+# not runtime-loaded code, so severity drops to info (doesn't affect score).
+EDUCATIONAL_DIRS = {"docs", "doc", "documentation"}
+
+# Test file name patterns — files live in arbitrary dirs (unlike test/ dirs which SKIP_DIRS catches).
+_TEST_FILE_SUFFIXES = (
+    ".test.ts", ".test.tsx", ".test.js", ".test.jsx", ".test.mjs",
+    ".spec.ts", ".spec.tsx", ".spec.js", ".spec.jsx",
+    "_test.py", "_test.go",
+)
+_TEST_FILE_PREFIXES = ("test_",)  # pytest convention: test_*.py
+
+# Non-code artifacts: markdown, postman collections, *.example/*.sample config templates.
+_NON_CODE_SUFFIXES = (
+    ".md", ".markdown", ".rst", ".txt",
+    ".postman_collection.json",
+    ".example", ".sample",
+    ".env.example", ".env.sample",
+)
+
+# Below this entropy, a matched value is likely a tutorial placeholder.
+# Real API keys typically have entropy >= 4.5. We use 4.0 as a conservative cutoff.
+ENTROPY_INFO_THRESHOLD = 4.0
+
+
+def _is_non_production_path(file_path: Path) -> bool:
+    """Check if file is in a non-production context (docs dir, test file, non-code artifact)."""
+    if any(part in EDUCATIONAL_DIRS for part in file_path.parts):
+        return True
+    name = file_path.name.lower()
+    if any(name.endswith(s) for s in _TEST_FILE_SUFFIXES):
+        return True
+    if any(name.startswith(p) for p in _TEST_FILE_PREFIXES) and name.endswith(".py"):
+        return True
+    if any(name.endswith(s) for s in _NON_CODE_SUFFIXES):
+        return True
+    return False
+
+
+def _adjusted_severity(entropy: float, file_path: Path | None) -> str | None:
+    """Return adjusted severity (or None to skip) based on entropy and path context.
+
+    Matrix:
+      production + high entropy → critical  (real leak)
+      production + low entropy  → info      (placeholder in real code)
+      non-prod   + high entropy → info      (real-looking key in docs/test/md)
+      non-prod   + low entropy  → None      (tutorial placeholder — skip entirely)
+    """
+    is_non_prod = file_path is not None and _is_non_production_path(file_path)
+    low_entropy = entropy < ENTROPY_INFO_THRESHOLD
+
+    if is_non_prod and low_entropy:
+        return None
+    if is_non_prod or low_entropy:
+        return "info"
+    return "critical"
+
 
 def shannon_entropy(data: str) -> float:
     """Shannon 엔트로피 계산 — 높을수록 실제 시크릿일 가능성 높음."""
@@ -97,8 +156,24 @@ def scan_file(file_path: Path) -> list[dict]:
                 if not is_likely_real_secret(matched_value):
                     continue
 
+                entropy = shannon_entropy(matched_value)
+                severity = _adjusted_severity(entropy, file_path)
+                if severity is None:
+                    continue
+
                 # 마스킹 처리 (앞 4자리만 표시)
                 masked = matched_value[:4] + "*" * min(len(matched_value) - 4, 20)
+
+                if severity == "info":
+                    remediation = (
+                        f"Non-production file — looks like a placeholder or example. "
+                        f"If this is a real {pattern_def['name']}, revoke it immediately and replace with an env variable."
+                    )
+                else:
+                    remediation = (
+                        f"Revoke this {pattern_def['name']} immediately and move it to "
+                        f"environment variables (.env) or a secret manager."
+                    )
 
                 findings.append({
                     "type": pattern_def["id"],
@@ -106,9 +181,9 @@ def scan_file(file_path: Path) -> list[dict]:
                     "file": str(file_path),
                     "line": line_num,
                     "masked_value": masked,
-                    "entropy": round(shannon_entropy(matched_value), 2),
-                    "severity": "critical",
-                    "remediation": f"Revoke this {pattern_def['name']} immediately and move it to environment variables (.env) or a secret manager.",
+                    "entropy": round(entropy, 2),
+                    "severity": severity,
+                    "remediation": remediation,
                 })
 
     return findings

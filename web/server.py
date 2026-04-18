@@ -35,6 +35,23 @@ MAX_REPORTS = 500  # LRU cap
 PUBLIC_ORIGIN = os.environ.get("PUBLIC_ORIGIN", "https://vibesafe.onrender.com")
 REPO_PATH_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 
+SEED_FILE = Path(__file__).parent / "seed_reports.json"
+
+
+def _load_seed_reports() -> None:
+    """Load pre-seeded reports from committed JSON file on startup."""
+    if not SEED_FILE.exists():
+        return
+    try:
+        data = json.loads(SEED_FILE.read_text())
+        for key, report in data.items():
+            if len(REPORTS) >= MAX_REPORTS:
+                break
+            REPORTS[key] = report
+        print(f"[SEED] Loaded {len(data)} pre-seeded reports into sitemap", flush=True)
+    except Exception as e:
+        print(f"[SEED] Failed to load seed reports: {e}", flush=True)
+
 # Leaderboard — all completed scan scores (in-memory, resets on deploy)
 # Seed with realistic distribution from actual AI-generated project scans
 SCORES: list[int] = [
@@ -384,6 +401,7 @@ class VibeSafeHandler(SimpleHTTPRequestHandler):
 
 
 def main():
+    _load_seed_reports()
     port = int(os.environ.get("PORT", 8080))
     server = HTTPServer(("0.0.0.0", port), VibeSafeHandler)
     print(f"VibeSafe Web Scanner running at http://localhost:{port}")
