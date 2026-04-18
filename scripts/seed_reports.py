@@ -73,7 +73,8 @@ def scan_repo(url: str) -> dict | None:
             capture_output=True,
             text=True,
             timeout=120,
-            env={"PATH": "/usr/local/bin:/usr/bin:/bin", "HOME": str(Path.home()),
+            env={"PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+                 "HOME": str(Path.home()),
                  "SEMGREP_MAX_MEMORY": "256"},
         )
         if result.returncode == 0:
