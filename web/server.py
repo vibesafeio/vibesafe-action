@@ -71,7 +71,12 @@ SCORES: list[int] = [
     85, 90, 100,
 ]
 
-# Analytics — simple counters (in-memory, resets on deploy)
+import datetime
+
+# Analytics — in-memory counters reset on deploy (Render free tier ~15min idle restart).
+# Durability: every log_event() also writes a line to stdout. Render retains logs ~7d,
+# so cumulative metrics are recoverable via `render logs | grep METRIC_EVENT`.
+PROCESS_STARTED_AT = datetime.datetime.now(datetime.timezone.utc).isoformat()
 METRICS = {
     "page_views": 0,
     "report_views": 0,
@@ -82,13 +87,17 @@ METRICS = {
     "install_clicks": 0,
 }
 
-import datetime
 
 def log_event(event: str, detail: str = ""):
-    """Log analytics event to stdout (visible in Render logs)."""
-    ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    """Increment in-memory counter and emit a parseable stdout event.
+
+    Stdout line format:  [METRIC_EVENT] ts=<iso> event=<name> detail=<...>
+    Render log replay can aggregate cumulative counts from these lines alone.
+    """
+    ts = datetime.datetime.now(datetime.timezone.utc).isoformat()
     METRICS[event] = METRICS.get(event, 0) + 1
-    print(f"[METRIC] {ts} {event} {detail}", flush=True)
+    safe_detail = (detail or "").replace("\n", " ").replace("\r", " ")[:200]
+    print(f"[METRIC_EVENT] ts={ts} event={event} detail={safe_detail}", flush=True)
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -186,7 +195,38 @@ class VibeSafeHandler(SimpleHTTPRequestHandler):
             return
 
         if parsed.path == "/api/metrics":
-            self._json_response(METRICS)
+            payload = {
+                **METRICS,
+                "process_started_at": PROCESS_STARTED_AT,
+                "note": "Counters reset on deploy/restart. Cumulative via stdout [METRIC_EVENT] log lines.",
+            }
+            self._json_response(payload)
+            return
+
+        if parsed.path == "/api/reports/recent":
+            limit_raw = parse_qs(parsed.query).get("limit", ["12"])[0]
+            try:
+                limit = max(1, min(50, int(limit_raw)))
+            except ValueError:
+                limit = 12
+            items = []
+            for key, rep in REPORTS.items():
+                results = rep.get("results") or {}
+                score_obj = results.get("score") or {}
+                pts = score_obj.get("score")
+                if pts is None:
+                    continue
+                items.append({
+                    "owner": rep.get("owner"),
+                    "repo": rep.get("repo"),
+                    "slug": key,
+                    "score": pts,
+                    "grade": score_obj.get("grade", "?"),
+                    "critical": score_obj.get("critical", 0),
+                    "high": score_obj.get("high", 0),
+                })
+            items.sort(key=lambda r: (-r["score"], r["slug"]))
+            self._json_response({"total": len(items), "items": items[:limit]})
             return
 
         if parsed.path == "/api/leaderboard":

@@ -192,6 +192,62 @@
             color: #888;
         }
         .burrow-stats strong { color: #fff; }
+
+        /* Popular scans grid (home only) */
+        .popular-section {
+            margin-top: 32px;
+            margin-bottom: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #222;
+            text-align: left;
+        }
+        .popular-section h3 {
+            font-size: 0.95rem;
+            color: #aaa;
+            margin-bottom: 14px;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+        .popular-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+        }
+        .popular-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #ddd;
+            font-size: 0.85rem;
+            transition: border-color 0.1s, background 0.1s;
+        }
+        .popular-card:hover { border-color: #4ade80; background: #141414; }
+        .popular-card .slug {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-right: 8px;
+            font-family: monospace;
+        }
+        .popular-card .grade-badge {
+            flex-shrink: 0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.75rem;
+            font-family: monospace;
+            min-width: 42px;
+            text-align: center;
+        }
+        .grade-A { background: #14532d; color: #4ade80; }
+        .grade-B { background: #422006; color: #facc15; }
+        .grade-C { background: #431407; color: #fb923c; }
+        .grade-D, .grade-F { background: #450a0a; color: #f87171; }
     </style>
 </head>
 <body>
@@ -208,12 +264,18 @@
         </div>
         <p class="hint">Public GitHub repos only. Your code stays on our server only during the scan.</p>
 
-        <p style="margin-bottom:40px;">
+        <p style="margin-bottom:16px;">
             <a href="#" id="peekBtn" onclick="showLeaderboardPreview(); return false;"
                style="color:#4ade80; font-size:0.9rem; text-decoration:underline; cursor:pointer;">
                 See how other AI-built apps scored →
             </a>
         </p>
+
+        <!-- Popular scans: hydrated from /api/reports/recent. Hidden on /report/ pages. -->
+        <div id="popularSection" class="popular-section" style="display:none">
+            <h3>Popular scans — real repos, live scores</h3>
+            <div id="popularGrid" class="popular-grid"></div>
+        </div>
 
         <div id="leaderboardPreview" style="display:none; margin-bottom:40px;">
             <div class="burrow-section">
@@ -813,6 +875,31 @@ jobs:
                     }
                 })
                 .catch(() => { startScan(); });
+        })();
+
+        // --- Popular scans grid (home only) ---
+        (function hydratePopular() {
+            // Only render on home. /report/<owner>/<repo> hides this to keep the result the focus.
+            if (window.location.pathname !== '/') return;
+            const section = document.getElementById('popularSection');
+            const grid = document.getElementById('popularGrid');
+            if (!section || !grid) return;
+            fetch('/api/reports/recent?limit=18')
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    if (!data || !data.items || !data.items.length) return;
+                    grid.innerHTML = data.items.map(r => {
+                        const grade = (r.grade || '?').charAt(0);
+                        const gradeClass = ['A','B','C','D','F'].includes(grade) ? `grade-${grade}` : 'grade-F';
+                        const slug = `${r.owner}/${r.repo}`;
+                        return `<a class="popular-card" href="/report/${encodeURIComponent(r.owner)}/${encodeURIComponent(r.repo)}">
+                            <span class="slug">${slug}</span>
+                            <span class="grade-badge ${gradeClass}">${grade} ${r.score}</span>
+                        </a>`;
+                    }).join('');
+                    section.style.display = 'block';
+                })
+                .catch(() => {});
         })();
     </script>
 </body>
