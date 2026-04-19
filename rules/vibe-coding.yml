@@ -126,7 +126,7 @@ rules:
       this image to visually impaired users. This is a WCAG 2.1 Level A violation
       and a common basis for ADA lawsuits.
     languages: [typescript, javascript]
-    severity: WARNING
+    severity: INFO
     metadata:
       category: accessibility
       subcategory: [a11y]
@@ -143,10 +143,12 @@ rules:
         - "*test*"
         - "*spec*"
     message: >
-      Accessibility: Form input without aria-label or aria-labelledby.
-      Screen readers cannot identify this field. WCAG 2.1 Level A violation.
+      Accessibility: Form input without aria-label or aria-labelledby. Note: this
+      rule does not detect <Label htmlFor="id"> sibling patterns (shadcn/MUI/Tailwind),
+      so review manually before trusting. Screen readers cannot identify this field
+      without either aria-label or a paired <label> with matching htmlFor.
     languages: [typescript, javascript]
-    severity: WARNING
+    severity: INFO
     metadata:
       category: accessibility
       subcategory: [a11y]

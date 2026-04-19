@@ -229,6 +229,40 @@ class VibeSafeHandler(SimpleHTTPRequestHandler):
             self._json_response({"total": len(items), "items": items[:limit]})
             return
 
+        # shields.io-compatible badge JSON: /api/badge/<owner>/<repo>
+        # Usage: https://img.shields.io/endpoint?url=https://vibesafe.onrender.com/api/badge/<owner>/<repo>
+        if parsed.path.startswith("/api/badge/"):
+            rest = parsed.path[len("/api/badge/"):].strip("/")
+            parts = rest.split("/")
+            if len(parts) != 2 or not all(REPO_PATH_RE.match(p) for p in parts):
+                self._json_response({"error": "invalid path"}, 400)
+                return
+            key = f"{parts[0]}/{parts[1]}"
+            rep = REPORTS.get(key)
+            if not rep or not rep.get("results"):
+                # Not scanned yet — shields shows a neutral gray state.
+                self._json_response({
+                    "schemaVersion": 1,
+                    "label": "VibeSafe",
+                    "message": "not scanned",
+                    "color": "lightgrey",
+                    "cacheSeconds": 300,
+                })
+                return
+            score_obj = (rep["results"].get("score") or {})
+            pts = score_obj.get("score")
+            grade = score_obj.get("grade", "?")
+            color_map = {"A": "brightgreen", "B": "yellow", "C": "orange", "D": "red", "F": "red"}
+            color = color_map.get(grade, "lightgrey")
+            self._json_response({
+                "schemaVersion": 1,
+                "label": "VibeSafe",
+                "message": f"{grade} ({pts}/100)" if pts is not None else grade,
+                "color": color,
+                "cacheSeconds": 600,
+            })
+            return
+
         if parsed.path == "/api/leaderboard":
             score_param = parse_qs(parsed.query).get("score", [None])[0]
             my_score = int(score_param) if score_param and score_param.isdigit() else None
