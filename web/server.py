@@ -469,6 +469,14 @@ class VibeSafeHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body.encode("utf-8"))
 
+    def do_HEAD(self):
+        # Route HEAD through GET. Without this, HEAD falls through to
+        # SimpleHTTPRequestHandler's static-file handler, which 404s our
+        # dynamic routes (e.g. /sitemap.xml → 404 text/html). A header-only
+        # HEAD would require buffering; responses here are small enough that
+        # sending+discarding the body is acceptable and keeps routing unified.
+        self.do_GET()
+
     def log_message(self, format, *args):
         """Suppress default logging for cleaner output."""
         pass
