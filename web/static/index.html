@@ -253,6 +253,9 @@
 </head>
 <body>
     <div class="container">
+        <!-- Server-rendered report block (populated on /report/<owner>/<repo> only). Replaced/removed by JS once live data loads. -->
+        __SSR_BODY__
+
         <h1>Is your AI-built app safe?</h1>
         <p class="subtitle">
             Paste your GitHub repo URL. Find out in 30 seconds.<br>
@@ -866,16 +869,24 @@ jobs:
             const owner = m[1], repo = m[2];
             const input = document.getElementById('repoUrl');
             if (input) input.value = `https://github.com/${owner}/${repo}`;
+            // Strip server-rendered SEO block once the interactive scan UI takes over.
+            // The SSR block exists for Googlebot; humans see the JS-rendered results instead.
+            function stripSSR() {
+                const ssr = document.getElementById('ssrReport');
+                if (ssr) ssr.remove();
+            }
             fetch(`/api/report/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`)
                 .then(r => r.ok ? r.json() : null)
                 .then(data => {
                     if (data && data.results) {
+                        stripSSR();
                         showResults(data.results);
                     } else {
+                        stripSSR();
                         startScan();
                     }
                 })
-                .catch(() => { startScan(); });
+                .catch(() => { stripSSR(); startScan(); });
         })();
 
         // --- Popular scans grid (home only) ---

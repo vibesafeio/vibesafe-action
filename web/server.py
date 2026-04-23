@@ -158,8 +158,112 @@ def _report_meta(owner: str, repo: str, report: dict | None) -> dict[str, str]:
     }
 
 
-def _render_index(meta: dict[str, str] | None = None) -> bytes:
-    """Render index.html with meta placeholders filled. Defaults to home-page meta."""
+def _build_report_ssr(owner: str, repo: str, report: dict | None) -> str:
+    """Return server-rendered HTML for /report/<owner>/<repo>.
+
+    Why: JS-rendered SPAs show 487 bytes of boilerplate to Googlebot on every
+    /report/ URL — treated as near-duplicate thin content, rarely ranked.
+    Rendering score/grade/findings server-side gives each URL ~1-2KB of unique
+    indexable text (repo-specific findings, stack mentions, severity counts).
+
+    Returns empty string when no cached report, so the JS bootstrap can
+    auto-scan and cached results from other visitors rehydrate the URL over time.
+    """
+    if not report or not report.get("results"):
+        return ""
+    slug = f"{owner}/{repo}"
+    r = report["results"]
+    score_obj = r.get("score") or {}
+    pts = score_obj.get("score")
+    grade = score_obj.get("grade", "?")
+    crit = score_obj.get("critical", 0)
+    high = score_obj.get("high", 0)
+    med = score_obj.get("medium", 0)
+    low = score_obj.get("low", 0)
+    stack = r.get("stack") or {}
+    langs = ", ".join(stack.get("languages", [])) or "Multiple languages"
+    frameworks = ", ".join(stack.get("detected_stack", [])) or None
+    scanned_at = (report.get("scanned_at") or "")[:10]  # YYYY-MM-DD
+
+    # Aggregate top finding rules for text content
+    findings = (r.get("sast") or {}).get("findings", []) or []
+    by_rule: dict[str, int] = {}
+    for f in findings:
+        rid = f.get("rule_id", "")
+        if rid:
+            by_rule[rid] = by_rule.get(rid, 0) + 1
+    top_rules = sorted(by_rule.items(), key=lambda x: -x[1])[:5]
+
+    secret_count = len((r.get("secrets") or {}).get("secrets", []))
+
+    findings_html = ""
+    if top_rules:
+        items = "".join(
+            f"<li><code>{escape(rid)}</code> — {cnt} occurrence{'s' if cnt != 1 else ''}</li>"
+            for rid, cnt in top_rules
+        )
+        findings_html = f'<h2>Top finding patterns</h2><ul class="ssr-findings">{items}</ul>'
+
+    stack_sentence = f"Stack: <strong>{escape(langs)}</strong>"
+    if frameworks:
+        stack_sentence += f" · Detected frameworks: <strong>{escape(frameworks)}</strong>"
+
+    grade_color = {"A": "#4ade80", "B": "#facc15", "C": "#fb923c", "D": "#f87171", "F": "#f87171"}.get(grade, "#888")
+
+    interpretation = (
+        "No critical or high severity issues — this repo passes VibeSafe's safety gate."
+        if crit == 0 and high == 0 else
+        f"{crit} critical and {high} high severity issues found — merge blocking recommended."
+    )
+
+    return f"""
+    <section class="ssr-report" id="ssrReport" itemscope itemtype="https://schema.org/Report">
+        <meta itemprop="name" content="Security scan for {escape(slug)}">
+        <h1 style="margin-bottom:8px;">Security report: <span style="font-family:monospace; color:#4ade80">{escape(slug)}</span></h1>
+        <p style="color:#888; font-size:0.9rem; margin-bottom:20px;">
+            Scanned by VibeSafe{' on ' + scanned_at if scanned_at else ''} — SAST, secret detection, and WCAG 2.1 accessibility audit.
+        </p>
+
+        <div class="ssr-grade-box" style="display:flex; align-items:center; gap:20px; padding:20px; background:#111; border-radius:12px; margin-bottom:24px;">
+            <div style="font-size:3.5rem; font-weight:bold; color:{grade_color}; font-family:monospace; line-height:1;">{escape(grade)}</div>
+            <div>
+                <div style="font-size:1.8rem; color:#fff;"><strong itemprop="resultScore">{pts if pts is not None else '?'}</strong><span style="color:#888;">/100</span></div>
+                <div style="color:#aaa; font-size:0.9rem; margin-top:4px;">
+                    {crit} critical · {high} high · {med} medium · {low} low
+                </div>
+            </div>
+        </div>
+
+        <p style="color:#ccc; margin-bottom:16px;">{interpretation}</p>
+        <p style="color:#ccc; margin-bottom:24px;">{stack_sentence}. {secret_count} secret{'s' if secret_count != 1 else ''} flagged (path/entropy-adjusted — docs, test fixtures, and non-code artifacts downgraded).</p>
+
+        {findings_html}
+
+        <h2>What VibeSafe checks</h2>
+        <p style="color:#bbb;">
+            This scan runs <strong>Semgrep OSS rules</strong> plus custom rules tuned for AI-generated code patterns.
+            It flags hardcoded secrets (AWS, OpenAI, GitHub tokens, JWTs), SQL injection, eval/exec, path traversal,
+            missing security headers, and WCAG 2.1 Level A accessibility gaps.
+        </p>
+
+        <h2>Scan your own repo</h2>
+        <p style="color:#bbb;">
+            <a href="/?utm_source=report&amp;utm_medium=ssr&amp;utm_campaign=cta" style="color:#4ade80;">
+                Paste your GitHub URL →</a> Free. 30 seconds. No signup. Results include findings with file:line and
+            a copy-pasteable fix prompt for Cursor / Claude.
+        </p>
+    </section>
+    """
+
+
+def _render_index(meta: dict[str, str] | None = None, body_ssr: str = "") -> bytes:
+    """Render index.html with meta placeholders filled. Defaults to home-page meta.
+
+    body_ssr: optional server-rendered HTML block injected at __SSR_BODY__ placeholder.
+    Used for /report/ pages to give Googlebot per-URL unique content instead of
+    the identical SPA shell. JS bootstrap removes the SSR block once the live
+    scan data is loaded, so no visual duplication.
+    """
     html = (STATIC_DIR / "index.html").read_text()
     defaults = {
         "title": "VibeSafe — Is your AI-built app safe?",
@@ -174,6 +278,7 @@ def _render_index(meta: dict[str, str] | None = None) -> bytes:
         "__META_TITLE__": escape(values["title"]),
         "__META_DESCRIPTION__": escape(values["description"]),
         "__META_OG_URL__": escape(values["og_url"]),
+        "__SSR_BODY__": body_ssr,
     }
     for k, v in replacements.items():
         html = html.replace(k, v)
@@ -318,7 +423,11 @@ class VibeSafeHandler(SimpleHTTPRequestHandler):
             owner, repo = parts
             key = f"{owner}/{repo}"
             log_event("report_views", key)
-            self._serve_html(_render_index(_report_meta(owner, repo, REPORTS.get(key))))
+            report = REPORTS.get(key)
+            self._serve_html(_render_index(
+                meta=_report_meta(owner, repo, report),
+                body_ssr=_build_report_ssr(owner, repo, report),
+            ))
             return
 
         # SEO crawl directives
