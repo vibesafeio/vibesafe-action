@@ -12,6 +12,20 @@ sources: []
 
 ## Content
 
+### 2026-04-23: `/report/` SSR body — thin-content 해결
+**결정:** `/report/<owner>/<repo>` 페이지 body를 서버 렌더. 기존 JS SPA는 유지하되 initial HTML에 score/grade/stack/findings 포함.
+**이유:** GSC 3개월 데이터 = 1 impression / 1 click. 17 URL이 동일한 487 char SPA shell만 노출 → Google duplicate/thin 판정. 실측 불일치 + SEO 구조적 원인 = 유일한 고침. 각 페이지가 1500+ chars 고유 콘텐츠 (score, stack 키워드, rule_id 패턴, cwe 언급).
+**대안:** (1) 전체 SSR 전환 — JS 경로 재작성 비용 큼 (2) JS pre-render 서비스 (Render 추가 비용) (3) 무시하고 awaiting 인덱싱 — 증거 부재, 도박
+**되돌릴 수 있나:** 예 (`body_ssr=""` 기본값으로 회귀)
+**관련:** [[marketing/results.md]] 2026-04-23 세션, [[engineering/architecture.md]]
+
+### 2026-04-19: a11y 규칙 severity WARNING → INFO
+**결정:** `a11y-img-missing-alt`, `a11y-input-missing-label` 규칙 severity를 WARNING (= medium, 4점) → INFO (= low, 1점) 다운그레이드. 플래그는 유지, 점수 영향만 약화.
+**이유:** 4 F 레포 분석 결과 전부 a11y-input-missing-label이 지배 (shadcn-ui 21개, payload 32개, trpc 27개). 규칙이 `aria-label`만 체크하고 `<Label htmlFor=...>` sibling 패턴 미감지 = 구조적 FP (shadcn/MUI/Tailwind 모두 이 패턴 사용). "Security scanner인데 a11y로 F" = 기대 불일치 + credibility 손상.
+**대안:** (1) 규칙 삭제 — OKKY "코딩숙" validation과 모순 (a11y 중요) (2) 규칙 재작성해 htmlFor sibling 감지 — HTML parser 필요, Semgrep pattern-regex로 어려움 (3) 유지 — 모든 사용자에게 F 표시 문제 지속
+**되돌릴 수 있나:** 예 (WARNING 복구)
+**관련:** [[engineering/failure-log.md]] 2026-04-19, [[product/features.md]]
+
 ### 2026-04-17: Per-repo SEO 랜딩 페이지 (`/report/<owner>/<repo>`)
 **결정:** 스캔 결과를 영구 URL로 노출. sitemap.xml + robots.txt + dynamic meta. 완료된 스캔은 REPORTS 캐시에 저장되어 sitemap에 자동 포함.
 **이유:** 일회성 포스트(OKKY/dev.to/GeekNews)는 48시간이면 트래픽 끊김. SEO 페이지는 시간 지날수록 compound. Snyk 전략 (npm 패키지마다 페이지).

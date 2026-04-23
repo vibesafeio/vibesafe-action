@@ -26,9 +26,11 @@ Pre-commit hook, MCP 서버, SCA, Config Scanner 구현 완료.
 | 머지 차단 | fail-on: critical/high/medium. exit 1 → red X | ✅ |
 | 점수 (0-100) | SARIF + secrets + 도메인 가중치 → 등급 A-F. `--verbose`로 per-item 차감 breakdown. high≥1이면 A 등급 차단 (B 캡). | ✅ |
 | 웹 스캐너 | URL 입력 → 30초 스캔 → 결과 + AI 프롬프트 | ✅ |
-| **Per-repo SEO 랜딩** | `/report/<owner>/<repo>` 영구 URL. 캐시 miss 시 auto-scan. robots.txt + sitemap.xml 크롤링 대상. dynamic meta (title/description/OG) | ✅ |
+| **Per-repo SEO 랜딩** | `/report/<owner>/<repo>` 영구 URL. 캐시 miss 시 auto-scan. robots.txt + sitemap.xml 크롤링. dynamic meta + **SSR body** (per-URL 1500+ chars 고유 Googlebot-visible 콘텐츠) | ✅ |
+| **Popular scans 홈 그리드** | 홈에 17 seed 카드 노출 (A-desc). sitemap을 사람이 안 읽으니 인간 진입 경로 확보 | ✅ |
+| **Badge 엔드포인트** | `/api/badge/:owner/:repo` — shields.io 호환 JSON. A green / B yellow / C orange / D/F red | ✅ |
 | **GitHub Marketplace 등재** | `github.com/marketplace/actions/vibesafe-security-scan` (v0.1.1 Latest) | ✅ |
-| UTM attribution | 외부 링크 전수 태깅 + server-side capture (Render 로그 `utm=...`) | ✅ |
+| UTM attribution | 외부 링크 전수 태깅 + server-side capture ([METRIC_EVENT] stdout 파싱 포맷) | ✅ |
 | 리더보드 | 픽셀아트 업라이트 바 차트 (바 위에 웜벳 마커). 홈 preview + 결과 burrow 통합. | ✅ |
 | Pre-commit hook | 커밋 전 secret 탐지 | ✅ |
 | MCP 서버 | Claude Code/Cursor 연동 (check_secret) | ✅ |
@@ -41,9 +43,10 @@ Pre-commit hook, MCP 서버, SCA, Config Scanner 구현 완료.
 | .gitignore 감사 | .env 미포함 시 경고 | ✅ |
 | PR 코멘트 접기 | Top 5 인라인, 나머지 `<details>` 접기 | ✅ |
 | Custom Rules | `custom-rules` input으로 사용자 YAML 추가 | ✅ |
-| 뱃지 | shields.io dynamic badge 가이드 | ✅ |
+| 뱃지 | shields.io dynamic badge 가이드 + `/api/badge/:owner/:repo` 엔드포인트 | ✅ |
 | Diff-only | 변경된 코드만 스캔 | ❌ (Semgrep Pro 전용) |
 | Certified 뱃지 UI | Share 페이지 + 뱃지 UI | ❌ (TODO) |
+| Metric persistence | Render 재시작 간 누적 카운터 (현재 ephemeral + stdout [METRIC_EVENT] 로그 replay) | ⚠️ 로그 파싱 필요 |
 
 ### Fix 제안 패턴 (Phase 1)
 | Semgrep Rule | Fix Type | 변환 |

@@ -1,7 +1,7 @@
 ---
 title: VibeSafe Knowledge Index
 type: index
-updated: 2026-04-17
+updated: 2026-04-23
 ---
 
 # VibeSafe Wiki Index
@@ -9,19 +9,21 @@ updated: 2026-04-17
 이 파일을 세션 시작 시 가장 먼저 읽는다.
 질문이 오면 여기서 관련 페이지를 찾고, 해당 페이지만 읽는다.
 
-## Current State (2026-04-17)
-- **Phase:** Post-launch, P0 distribution 배포 완료. 일회성 포스트 → 영구 SEO 자산 전환.
-- **Stack:** GitHub Action + Docker + Semgrep + Custom Rules + Web Scanner (Render) + **Per-repo SEO 랜딩 페이지**
+## Current State (2026-04-23)
+- **Phase:** Post-launch. 기술 인프라 완성 — **유입 채널 블로킹**: HN/Reddit 미게시, Awesome Lists PR 미제출 (초안 `docs/`에 완성). 3개월 GSC 1 impression = 유입 0.
+- **Stack:** GitHub Action + Docker + Semgrep + Custom Rules + Web Scanner (Render) + Per-repo SEO 랜딩 (**SSR body** per-URL 1500+ chars, 2026-04-23) + Popular scans 홈 그리드 + Badge API (`/api/badge/:owner/:repo`)
+- **Seed:** 17 repo (A:12 / B:2 / C:3, F:0). a11y 규칙 INFO 다운그레이드 후 재seed.
 - **Channels:**
-  - OKKY (772뷰, 댓글 4개 — 2026-04-17 "코딩숙" 실제 유저 피드백 확보)
-  - dev.to (반응 없음)
-  - GeekNews (발행)
-  - **GitHub Marketplace (2026-04-17 등재, v0.1.1 Latest)**
-  - **Per-repo SEO (sitemap + robots.txt live, 인덱싱 대기)**
-  - ~~Twitter/LinkedIn~~ (기각: 0-audience에서 follower-based = dead)
-- **KPI (2026-04-17 20:46 KST baseline):** Stars **6**, install_clicks **0**, page_views **3**. Day+3 (2026-04-20) 재측정 예정.
-- **Mascot:** 픽셀 웜벳 (확정). 분포 차트는 **업라이트 바 차트**로 전환 (가시성 우선).
-- **Comms style:** SV (Action + Owner + Deadline + Metric) + Musk 제1원칙 (facts first). CLAUDE.md에 고정.
+  - OKKY (772뷰, 댓글 4개 — 2026-04-11 이후 휴면)
+  - dev.to (반응 없음), GeekNews (반응 확인 안 됨)
+  - GitHub Marketplace (v0.1.1 Latest)
+  - Per-repo SEO (sitemap + robots.txt + SSR body live, GSC 3개월 1 impression)
+  - Awesome Lists PR 초안 `docs/awesome_lists_prs.md` (미제출)
+  - HN/Reddit 초안 `docs/hn_reddit_post_draft.md` (미게시)
+  - ~~Twitter/LinkedIn~~ (기각)
+- **KPI (2026-04-23 실측):** Stars **6** (Δ=0 since 04-17), page_views 0 (ephemeral), install_clicks 0. Day+3 타겟 전부 miss. **근본 원인: 외부 유입 채널 미활성.**
+- **Mascot:** 픽셀 웜벳. 분포 차트: 업라이트 바 + 웜벳 마커.
+- **Comms style:** SV (Action + Owner + Deadline + Metric) + Musk 제1원칙 (facts first).
 
 ## Page Directory
 

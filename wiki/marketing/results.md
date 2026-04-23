@@ -84,21 +84,43 @@ P0 (UTM + Marketplace + Install CTA) 배포 직후 측정. Day+3 (2026-04-20) �
 - 분포: 0-29점 대에 31개 집중 (현실적)
 - 실 스캔 점수가 추가되면서 분포 업데이트됨
 
-### Day+3 측정 계획 (2026-04-20)
+### Day+3 측정 계획 (2026-04-20) — 결과
 
-| 메트릭 | Baseline (04-17) | Target (04-20) | 체크 방법 |
-|--------|------------------|----------------|-----------|
-| Stars | 6 | ≥ 10 | `curl api.github.com/repos/vibesafeio/vibesafe-action` |
-| Render `page_views` | 3 | ≥ 20 | `curl vibesafe.onrender.com/api/metrics` |
-| Render `install_clicks` | 0 | ≥ 1 | 같음 |
-| UTM 분포 (top 3 소스) | N/A | 식별 | Render 로그 `grep "[METRIC].*utm=" | sort | uniq -c` |
-| Marketplace traffic | 시작 | 측정 시작 | Marketplace analytics (사용자 수동 확인) |
-| SEO 페이지 인덱싱 | 0 | sitemap 크롤링 확인 | Google Search Console (사용자 필요) |
+| 메트릭 | Baseline (04-17) | Target (04-20) | 실측 (04-23) | 결과 |
+|--------|------------------|----------------|---------------|------|
+| Stars | 6 | ≥ 10 | **6** | ❌ miss (Δ=0) |
+| Render `page_views` | 3 | ≥ 20 | 0 (ephemeral) | ❌ 측정 불가 |
+| Render `install_clicks` | 0 | ≥ 1 | 0 (ephemeral) | ❌ 측정 불가 |
+| UTM 분포 | N/A | 식별 | 데이터 없음 | n/a |
+| Marketplace traffic | 시작 | 측정 시작 | 미확인 | user 수동 확인 필요 |
+| SEO 페이지 인덱싱 | 0 | sitemap 크롤링 확인 | **17 URL 인덱싱됨, 3개월 1 impression** | ❌ 유입 없음 |
+
+**진단**: 배포 인프라 완성, 유입 채널 전무. stars 증가 0의 근본 원인 = 외부 유입 경로 미활성 (HN/Reddit/Awesome Lists 포스팅 대기).
+
+### 2026-04-19 세션: a11y 규칙 구조 수정
+
+| 변경 | 커밋 | 배경 |
+|------|------|------|
+| Popular scans 홈 그리드 (17 seed 카드) | d3a6ba9 | SEO 페이지를 사람 유입 경로로 노출. sitemap은 사람이 안 봄. |
+| `[METRIC_EVENT]` stdout parseable 포맷 | d3a6ba9 | Render 로그 replay로 누적 메트릭 복원 가능 |
+| `/api/badge/:owner/:repo` (shields.io 호환) | d2c4a7e | README 뱃지 유입 경로 |
+| a11y 규칙 WARNING → INFO | d2c4a7e | 4 F 레포 (continue/payload/trpc/shadcn) 원인 = `a11y-input-missing-label` FP (htmlFor 패턴 미감지). 구조적 FP → severity 다운그레이드로 점수 살림. |
+| 재seed 17 repo | ae2fec5 | F 소멸: A:12 / B:2 / C:3 |
+| HEAD routing → do_GET alias | 04ea0ff | `curl -I /sitemap.xml` 404 text/html 버그 (SimpleHTTP static handler fallthrough) |
+| Google Search Console verify meta | d2c4a7e | user action 미실행 시점에서 선행 준비 |
+| Awesome Lists PR 초안 x3 | 7866e87 | user 수동 제출 대기 |
+| HN/Reddit 데이터 포스트 초안 | 7866e87 | user 수동 게시 대기 |
+
+### 2026-04-23 세션: SEO content quality
+
+| 변경 | 커밋 | 근거 |
+|------|------|------|
+| `/report/` SSR body | adfaf57 | GSC 실측: 3개월 1 impression. 원인 = 17 URL이 JS SPA 때문에 Googlebot에 487 chars duplicate. SSR로 per-URL 1500+ chars 고유 콘텐츠 (score + stack + findings + keywords). |
 
 ## Open Questions
-- SEO 페이지 Google 인덱싱 latency? (사이트맵 제출 후 N일)
-- Marketplace 유입이 실제 install로 전환되는 비율?
-- "코딩숙" 같은 anecdotal 피드백 누적 → testimonial 활용 시점?
+- SSR 배포 후 GSC impression 증가 시점? (1-4 weeks 예상, 2026-05-07까지 재측정)
+- 유입이 없으면 KPI 측정 자체가 의미 없음 — user action 타임라인?
+- 메트릭 ephemeral 문제: Render 로그 7일 retention → 로그 aggregation 스크립트 필요 시점 판단
 
 ## Related
 - [[marketing/channels.md]]
