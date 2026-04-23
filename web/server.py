@@ -72,6 +72,7 @@ SCORES: list[int] = [
 ]
 
 import datetime
+from collections import deque
 
 # Analytics — in-memory counters reset on deploy (Render free tier ~15min idle restart).
 # Durability: every log_event() also writes a line to stdout. Render retains logs ~7d,
@@ -87,9 +88,15 @@ METRICS = {
     "install_clicks": 0,
 }
 
+# Ring buffer of recent events for live tail without Render API access.
+# Exposed via /api/metrics/events so external dashboards can poll without grepping logs.
+# Also resets on restart — same durability ceiling as METRICS.
+MAX_EVENT_BUFFER = 1000
+EVENT_BUFFER: deque[dict] = deque(maxlen=MAX_EVENT_BUFFER)
+
 
 def log_event(event: str, detail: str = ""):
-    """Increment in-memory counter and emit a parseable stdout event.
+    """Increment in-memory counter, append to ring buffer, emit stdout line.
 
     Stdout line format:  [METRIC_EVENT] ts=<iso> event=<name> detail=<...>
     Render log replay can aggregate cumulative counts from these lines alone.
@@ -97,6 +104,7 @@ def log_event(event: str, detail: str = ""):
     ts = datetime.datetime.now(datetime.timezone.utc).isoformat()
     METRICS[event] = METRICS.get(event, 0) + 1
     safe_detail = (detail or "").replace("\n", " ").replace("\r", " ")[:200]
+    EVENT_BUFFER.append({"ts": ts, "event": event, "detail": safe_detail})
     print(f"[METRIC_EVENT] ts={ts} event={event} detail={safe_detail}", flush=True)
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -303,9 +311,43 @@ class VibeSafeHandler(SimpleHTTPRequestHandler):
             payload = {
                 **METRICS,
                 "process_started_at": PROCESS_STARTED_AT,
-                "note": "Counters reset on deploy/restart. Cumulative via stdout [METRIC_EVENT] log lines.",
+                "buffered_events": len(EVENT_BUFFER),
+                "note": "Counters reset on deploy/restart. Cumulative via stdout [METRIC_EVENT] log lines or /api/metrics/events live tail.",
             }
             self._json_response(payload)
+            return
+
+        if parsed.path == "/api/metrics/events":
+            # Live tail of recent events. Params:
+            #   limit: max events to return (default 200, max MAX_EVENT_BUFFER)
+            #   event: filter to a specific event name
+            #   since: only events with ts > this ISO string
+            qs = parse_qs(parsed.query)
+            limit_raw = qs.get("limit", [str(MAX_EVENT_BUFFER)])[0]
+            try:
+                limit = max(1, min(MAX_EVENT_BUFFER, int(limit_raw)))
+            except ValueError:
+                limit = 200
+            event_filter = qs.get("event", [None])[0]
+            since = qs.get("since", [None])[0]
+            items = list(EVENT_BUFFER)
+            if since:
+                items = [e for e in items if e["ts"] > since]
+            if event_filter:
+                items = [e for e in items if e["event"] == event_filter]
+            items = items[-limit:]
+            # UTM source rollup for convenience
+            utm_counts: dict[str, int] = {}
+            for e in items:
+                det = e.get("detail", "")
+                if det.startswith("utm="):
+                    utm_counts[det] = utm_counts.get(det, 0) + 1
+            self._json_response({
+                "total_buffered": len(EVENT_BUFFER),
+                "returned": len(items),
+                "utm_rollup": dict(sorted(utm_counts.items(), key=lambda x: -x[1])),
+                "events": items,
+            })
             return
 
         if parsed.path == "/api/reports/recent":
