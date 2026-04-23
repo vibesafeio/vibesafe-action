@@ -155,7 +155,25 @@ All links in post bodies above include `?utm_source=<channel>`. Render captures:
 [METRIC_EVENT] ts=... event=page_views detail=utm=reddit-programming/social/launch
 ```
 
-Aggregation after 24h: `render logs --tail 10000 | grep "utm=hn" | wc -l`.
+**Live polling (no Render API needed)**:
+```bash
+# utm_rollup in one call — aggregated since last Render restart
+curl -s https://vibesafe.onrender.com/api/metrics/events \
+  | python3 -c "import json,sys; d=json.load(sys.stdin); [print(f'{c:>4}  {k}') for k,c in d['utm_rollup'].items()]"
+
+# Filter by event — install_clicks since posting
+curl -s "https://vibesafe.onrender.com/api/metrics/events?event=install_clicks" \
+  | python3 -c "import json,sys; print(json.load(sys.stdin)['returned'])"
+
+# Since a specific timestamp (e.g. HN post time)
+curl -s "https://vibesafe.onrender.com/api/metrics/events?since=2026-04-22T16:00:00+00:00"
+```
+
+**Full history (when /api/metrics/events loses buffer after restart)**:
+```bash
+# Render dashboard → Logs tab → export → grep
+render logs --tail 10000 | grep "utm=hn" | wc -l
+```
 
 ## Risks
 
